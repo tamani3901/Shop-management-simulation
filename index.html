@@ -23,8 +23,18 @@
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             width: 90%;
-            max-width: 900px;
+            max-width: 900px; /* PCモードの最大幅 */
             padding: 30px;
+            transition: max-width 0.3s, width 0.3s;
+        }
+
+        /* --- スマホモード時 --- */
+        .mobile-mode #game-container {
+            width: 100%;
+            max-width: none;
+            padding: 10px;
+            box-shadow: none;
+            border-radius: 0;
         }
 
         h1, h2 {
@@ -36,11 +46,11 @@
         }
 
         .screen {
-            display: none; /* 初期は全て非表示 */
+            display: none;
         }
 
         .screen.active {
-            display: block; /* アクティブな画面のみ表示 */
+            display: block;
         }
 
         .option-group {
@@ -59,7 +69,7 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
-            text-decoration: none; /* リンクのスタイル調整 */
+            text-decoration: none;
             display: inline-block;
         }
 
@@ -67,7 +77,7 @@
             background-color: #0b7dda;
         }
 
-        /* ゲーム実行画面のUI */
+        /* ゲーム実行画面のUI (PCモードのデフォルト) */
         #game-ui {
             display: grid;
             grid-template-areas: 
@@ -77,6 +87,21 @@
             gap: 15px;
         }
 
+        /* --- スマホモード時のレイアウト変更 --- */
+        .mobile-mode #game-ui {
+            grid-template-areas: 
+                "header"
+                "main"
+                "sidebar";
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .mobile-mode .button-list button, .mobile-mode .action-btn, .mobile-mode .button-list a {
+            width: calc(50% - 10px); /* ボタンを横に2つ並べる */
+            margin: 5px;
+        }
+
         #header-bar {
             grid-area: header;
             display: flex;
@@ -84,6 +109,24 @@
             align-items: center;
             padding: 10px 0;
             border-bottom: 1px solid #ddd;
+        }
+
+        .mobile-mode #header-bar {
+            flex-direction: column; 
+            align-items: center;
+            border-bottom: none;
+            padding-top: 0;
+        }
+        .mobile-mode #header-bar > div {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .mobile-mode #status-display, .mobile-mode #day-time-display {
+            font-size: 1em;
+            margin: 5px 0;
+            display: block;
+            width: 100%;
         }
 
         #main-game-area {
@@ -138,6 +181,14 @@
             min-width: 100px;
             text-align: center;
         }
+        /* --- スマホモード時の席マップ調整 --- */
+        .mobile-mode #seat-map div {
+            margin: 5px;
+            min-width: 80px;
+            font-size: 0.8em;
+            padding: 5px;
+        }
+
 
         .seat-empty { background-color: #ddffdd; border: 1px solid #4CAF50; }
         .seat-occupied-wait { background-color: #fffacd; border: 1px solid #ffc107; color: #333; }
@@ -165,7 +216,14 @@
             max-width: 600px;
             border-radius: 10px;
             box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+            transition: width 0.3s, margin 0.3s;
         }
+        .mobile-mode .modal-content {
+            width: 95%;
+            margin: 10px auto;
+            padding: 15px;
+        }
+        
         .employee-item, .menu-item-row, .item-list-row {
             display: flex;
             justify-content: space-between;
@@ -178,82 +236,17 @@
             text-align: right;
             margin-left: 10px;
         }
-
-        /* ========================================================= */
-        /* 【追加】スマホモード (Mobile-friendly design) */
-        /* ========================================================= */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            #game-container {
-                width: 100%;
-                max-width: 100%;
-                padding: 10px;
-                box-shadow: none; /* スマホでは影を削除して広々使う */
-                border-radius: 0;
-            }
-            #game-ui {
-                grid-template-areas: 
-                    "header"
-                    "main"
-                    "sidebar";
-                grid-template-columns: 1fr; /* 1列にスタック */
-                gap: 10px;
-            }
-            #header-bar {
-                flex-direction: column; /* 縦に並べる */
-                align-items: center;
-                border-bottom: none;
-                padding-top: 0;
-            }
-            #header-bar > div {
-                width: 100%;
-                text-align: center;
-                margin-bottom: 10px;
-            }
-            #status-display, #day-time-display {
-                font-size: 1em;
-                margin: 5px 0;
-                display: block;
-                width: 100%;
-            }
-            .button-list button, .action-btn, .button-list a {
-                width: calc(50% - 10px); /* ボタンを横に2つ並べる */
-                margin: 5px;
-            }
-            /* ボタンが多すぎる場合は1列にする */
-            #header-bar .action-btn {
-                width: auto;
-                flex-grow: 1; 
-                margin: 2px;
-            }
-            #main-game-area, #sidebar-info {
-                padding: 10px;
-                min-height: 200px;
-            }
-            #seat-map div {
-                margin: 5px; /* 席の間隔を詰める */
-                min-width: 80px;
-                font-size: 0.8em;
-                padding: 5px;
-            }
-            .modal-content {
-                width: 95%;
-                margin: 10px auto;
-                padding: 15px;
-            }
-            .item-list-row {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .item-list-row > div {
-                margin-top: 5px;
-                width: 100%;
-            }
+        .mobile-mode .item-list-row {
+            flex-direction: column;
+            align-items: flex-start;
         }
-        /* ========================================================= */
-
+        .mobile-mode .item-list-row > span {
+            margin-bottom: 5px;
+        }
+        .mobile-mode .item-list-row > div {
+            margin-top: 5px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -265,17 +258,14 @@
             <button onclick="showScreen('start-screen')">新しいゲームを開始</button>
             <button onclick="loadGameFromHome()">セーブデータを読み込む</button>
             <a href="https://tamani3901.github.io/ti-tobann/" target="_blank" style="background-color: #ff5722;">チートモード対応版へ</a> 
-            
-          
-    </div>
+        </div>
     </div>
 
     <div id="start-screen" class="screen">
         <h2>新規ゲーム設定</h2>
         
         <div id="step-type" class="option-group">
-            <h3>1.
- 店の種類を選んでください</h3>
+            <h3>1. 店の種類を選んでください</h3>
             <div class="button-list">
                 <button data-type="FastFood" onclick="selectType('FastFood')">ファーストフード</button>
                 <button data-type="Restaurant" onclick="selectType('Restaurant')">レストラン</button>
@@ -284,42 +274,36 @@
         </div>
 
         <div id="step-location" class="option-group" style="display: none;">
-      
-          <h3>2. 場所を選んでください</h3>
+            <h3>2. 場所を選んでください</h3>
             <div class="button-list">
                 <button data-loc="大都市部" data-max="10" onclick="selectLocation('大都市部', 10)">大都市部 (最大10席)</button>
                 <button data-loc="都市部" data-max="7" onclick="selectLocation('都市部', 7)">都市部 (最大7席)</button>
                 <button data-loc="中都市" data-max="5" onclick="selectLocation('中都市', 5)">中都市 (最大5席)</button>
-                <button 
- data-loc="小都市" data-max="3" onclick="selectLocation('小都市', 3)">小都市 (最大3席)</button>
+                <button data-loc="小都市" data-max="3" onclick="selectLocation('小都市', 3)">小都市 (最大3席)</button>
             </div>
             <p id="location-info"></p>
         </div>
 
         <div id="step-size" class="option-group" style="display: none;">
-            <h3>3.
- 店の大きさを決めてください (最大 <span id="max-seats">?</span> 席)</h3>
+            <h3>3. 店の大きさを決めてください (最大 <span id="max-seats">?</span> 席)</h3>
             <p>現在の席数: <span id="current-seats">0</span> 席 (2人掛けテーブル <span id="current-tables">0</span> 個)</p>
             <p>初期費用: <span id="initial-cost">0</span> 円</p>
             <div class="button-list">
                 <button onclick="changeSeats(-2)">席を減らす</button>
                 <button onclick="changeSeats(2)">席を増やす</button>
             </div>
-   
-         </div>
+        </div>
         
         <div id="step-menu" class="option-group" style="display: none;">
-            <h3>4.
- 初期メニューを選択してください (5個まで)</h3>
+            <h3>4. 初期メニューを選択してください (5個まで)</h3>
             <p>選択中: <span id="selected-menu-count">0</span> / 5</p>
             <div id="menu-selection-area" class="button-list" style="display: flex; flex-wrap: wrap;">
-                </div>
+            </div>
         </div>
 
         <div id="step-start" class="option-group" style="text-align: center; margin-top: 30px; display: none;">
             <button onclick="showConfirmation()" class="action-btn" style="background-color: #4CAF50;">ゲーム開始</button>
-         
-       <button onclick="checkSavedGame(); showConfirmation();" id="load-game-btn" class="action-btn" style="background-color: #ff9800; margin-left: 10px; display: none;">ロード</button>
+            <button onclick="checkSavedGame(); showConfirmation();" id="load-game-btn" class="action-btn" style="background-color: #ff9800; margin-left: 10px; display: none;">ロード</button>
             <button onclick="resetSetup()" class="action-btn">設定をリセット</button>
             <p id="load-info" style="margin-top: 5px; font-size: 0.9em;"></p>
         </div>
@@ -330,8 +314,7 @@
         <p>以下の設定でゲームを開始します。よろしいですか？</p>
         <div id="config-summary"></div>
         <div class="button-list" style="text-align: center;">
-  
-           <button onclick="startGame()" class="action-btn" style="background-color: #4CAF50;">OK (ゲームスタート)</button>
+            <button onclick="startGame()" class="action-btn" style="background-color: #4CAF50;">OK (ゲームスタート)</button>
             <button onclick="showScreen('start-screen')" class="action-btn">戻る</button>
         </div>
     </div>
@@ -340,45 +323,39 @@
         <div id="game-ui">
             <div id="header-bar">
                 <div>
-               
-          <button onclick="showMenu()" class="action-btn">メニュー</button>
+                    <button onclick="showMenu()" class="action-btn">メニュー</button>
                     <button onclick="showSettings()" class="action-btn">設定</button>
                     <button onclick="showItems()" class="action-btn" style="background-color: #3f51b5;">アイテム</button>
                     <button onclick="saveGame()" class="action-btn" style="background-color: #007bff;">セーブ</button>
-                    <button onclick="quitGame()" class="action-btn" 
- style="background-color: #f44336;">やめる</button>
+                    <button onclick="quitGame()" class="action-btn" style="background-color: #f44336;">やめる</button>
+                    <button id="mode-toggle-btn" onclick="toggleMobileMode()" class="action-btn" style="background-color: #607d8b;">PCモード</button>
                 </div>
                 <div id="day-time-display">
-                    <span id="day-display">Day 1</span> |
- <span id="time-display">00:00</span>
+                    <span id="day-display">Day 1</span> | <span id="time-display">00:00</span>
                 </div>
                 <div id="status-display">
-                    <span id="asset-display">資産: 15,000,000円</span> |
- <span id="reputation-display">評判: ★3</span>
+                    <span id="asset-display">資産: 15,000,000円</span> | <span id="reputation-display">評判: ★3</span>
                 </div>
             </div>
             <div id="main-game-area">
                 <h3>店舗エリア (<span id="store-type-display"></span> / <span id="store-location-display"></span>)</h3>
                 <div id="seat-map">
-                   
-   </div>
+                </div>
             </div>
             <div id="sidebar-info">
                 <h3>情報</h3>
                 <p>高級ゴミ箱: <span id="garbage-can-status">未購入</span></p>
                 <h4>従業員（<span id="employee-count">0</span>名）</h4>
                 <div id="employee-status">
-      
-               </div>
+                </div>
                 <hr>
                 <h4>待機中のタスク</h4>
                 <p>注文待ち: <span id="wait-order-count">0</span></p>
                 <p>調理待ち: <span id="wait-cook-count">0</span></p>
                 <hr>
-  
-               <h4>客の詳細</h4>
+                <h4>客の詳細</h4>
                 <div id="waiting-customer-details">
-                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -390,16 +367,14 @@
     <div class="modal-content">
         <h2>店舗設定</h2>
         
- 
         <div class="option-group">
             <h3>従業員管理 (現在の人数: <span id="current-employee-count">0</span>人)</h3>
             <div id="employee-list-settings">
-                </div>
+            </div>
             <p><strong>採用:</strong> (日当)</p>
             <div class="button-list">
                 <button onclick="addEmployee('ベテラン')">ベテラン (30万)</button>
-    
-             <button onclick="addEmployee('標準')">標準 (20万)</button>
+                <button onclick="addEmployee('標準')">標準 (20万)</button>
                 <button onclick="addEmployee('ポンコツ')">ポンコツ (10万)</button>
             </div>
         </div>
@@ -407,8 +382,7 @@
         <div class="option-group">
             <h3>資産設定</h3>
             <p>
-               
-  <label>
+                <label>
                     <input type="checkbox" id="infinite-asset-toggle" onchange="toggleInfiniteAsset()"> 
                     資産を無制限にする
                 </label>
@@ -416,8 +390,7 @@
         </div>
 
         <div class="option-group">
-          
-           <h3>ファイル操作（セーブ/ロード）</h3>
+            <h3>ファイル操作（セーブ/ロード）</h3>
             <div class="button-list">
                 <button onclick="downloadSaveFile()" class="action-btn" style="background-color: #ff9800;">JSONをダウンロード</button>
             </div>
@@ -425,8 +398,7 @@
             <input type="file" id="load-file-input" accept=".json" onchange="loadGameFromFile(event)" style="margin-top: 10px;">
         </div>
         
-       
-  <button onclick="closeModal('settings-modal')" class="action-btn">設定を閉じる</button>
+        <button onclick="closeModal('settings-modal')" class="action-btn">設定を閉じる</button>
     </div>
 </div>
 
@@ -438,18 +410,16 @@
         <div class="option-group">
             <h3>現在の提供メニュー (<span id="menu-count">0</span>個)</h3>
             <div id="current-menu-list">
-                </div>
+            </div>
         </div>
 
-  
-       <div class="option-group">
+        <div class="option-group">
             <h3>新規メニューの追加</h3>
             <p>
                 <button onclick="showAllMenuOptions()">メニュー一覧を表示</button>
             </p>
-            <div id="all-menu-options" style="display: none;
- border: 1px dashed #ccc; padding: 10px;">
-                </div>
+            <div id="all-menu-options" style="display: none; border: 1px dashed #ccc; padding: 10px;">
+            </div>
         </div>
 
         <button onclick="closeModal('menu-modal')" class="action-btn">管理を終了</button>
@@ -462,13 +432,11 @@
         <p>購入したいアイテムを選んでください。</p>
         
         <div id="item-list-purchase" class="option-group">
-            </div>
+        </div>
 
-    
-     <button onclick="closeModal('item-modal')" class="action-btn">閉じる</button>
+        <button onclick="closeModal('item-modal')" class="action-btn">閉じる</button>
     </div>
 </div>
-
 
 <script>
     // --- ゲームの静的データ ---
@@ -478,56 +446,50 @@
             { name: "チーズバーガー", basePrice: 500, cost: 200, category: "Burger" },
             { name: "テリヤキバーガー", basePrice: 500, cost: 220, category: "Burger" },
             { name: "ハンバーガー", basePrice: 500, cost: 180, category: "Burger" },
-   
-           { name: "焼肉ライスバーガー", basePrice: 500, cost: 250, category: "Burger" },
+            { name: "焼肉ライスバーガー", basePrice: 500, cost: 250, category: "Burger" },
             { name: "ポテトS", basePrice: 200, cost: 50, category: "Side" },
             { name: "ポテトM", basePrice: 300, cost: 70, category: "Side" },
             { name: "ポテトL", basePrice: 450, cost: 90, category: "Side" },
-            { name: "ナゲット", basePrice: 300, cost: 100, 
- category: "Side" },
+            { name: "ナゲット", basePrice: 300, cost: 100, category: "Side" },
             { name: "バニラシェイク", basePrice: 300, cost: 80, category: "Shake" },
             { name: "いちごシェイク", basePrice: 300, cost: 90, category: "Shake" },
             { name: "オレンジジュース", basePrice: 300, cost: 50, category: "Drink" },
             { name: "コーラ", basePrice: 300, cost: 60, category: "Drink" },
         ],
-      
         Restaurant: [
             { name: "マルゲリータ", basePrice: 1200, cost: 350, category: "Pizza" },
             { name: "チーズピザ", basePrice: 1200, cost: 300, category: "Pizza" },
             { name: "ナポリタンパスタ", basePrice: 1000, cost: 280, category: "Pasta" },
             { name: "トマトパスタ", basePrice: 1000, cost: 300, category: "Pasta" },
-            { 
- name: "カルボナーラ", basePrice: 1000, cost: 320, category: "Pasta" },
+            { name: "カルボナーラ", basePrice: 1000, cost: 320, category: "Pasta" },
             { name: "パンケーキ", basePrice: 900, cost: 250, category: "Dessert" },
             { name: "ハンバーグ", basePrice: 1300, cost: 400, category: "Main" },
             { name: "ステーキ", basePrice: 1400, cost: 500, category: "Main" },
             { name: "サラダ", basePrice: 500, cost: 150, category: "Side" },
-        
-           { name: "パフェ", basePrice: 700, cost: 200, category: "Dessert" },
+            { name: "パフェ", basePrice: 700, cost: 200, category: "Dessert" },
             { name: "プリン", basePrice: 400, cost: 120, category: "Dessert" },
             { name: "ご飯", basePrice: 350, cost: 80, category: "Side" },
             { name: "オレンジジュース", basePrice: 300, cost: 50, category: "Drink" },
             { name: "コーラ", basePrice: 300, cost: 60, category: "Drink" },
-   
-         ]
+        ]
     };
     
-    // 【修正】席数拡張アイテムを追加
+    // 【修正なし】席数拡張アイテム
     const ITEM_DATA = {
         GARBAGE_CAN: { name: "高級ゴミ箱", cost: 10000, effect: "客の満足度減少速度が少し緩和（効果持続）" },
         CLEANING: { name: "清掃サービス", cost: 50000, effect: "店の評判を0.2上げる（即時効果）" },
-        SEAT_EXPANSION: { name: "席数拡張 (2席)", cost: 10000, effect: "席数を2席増やします (上限20席)" } // 【追加】席数拡張
+        SEAT_EXPANSION: { name: "席数拡張 (2席)", cost: 10000, effect: "席数を2席増やします (上限20席)" } 
     };
     
     const costDetails = {
         '大都市部': 3000000, '都市部': 3000000,
         '中都市': 2000000, '小都市': 2000000,
-        'BASE': 3000000 // 店を建てる費用
+        'BASE': 3000000
     };
-    // --- 共通変数（初期化キー） ---
+    
     const SAVE_KEY = 'restaurant_tycoon_save';
     // =========================================================
-    // 0. クラス定義
+    // 0. クラス定義 (大きな変更なし、ロジックはGameManagerに集中)
     // =========================================================
 
     class MenuItem {
@@ -547,13 +509,11 @@
                 case 'ベテラン':
                     this.speedMultiplier = 1.5;
                     this.missRate = 0.0;
-                    // 【修正】日給を30万に
                     this.dailyCost = 300000;
                     break;
                 case '標準':
                     this.speedMultiplier = 1.0;
                     this.missRate = 0.03;
-                    // 【修正】日給を20万に
                     this.dailyCost = 200000;
                     break;
                 case 'ポンコツ':
@@ -576,11 +536,9 @@
             this.orderType = orderType; 
             this.seatId = seatId;
             this.status = 'WaitOrder';
-            // WaitOrder, WaitCook, WaitServe, Eating, Paying, Done
             this.patience = 60;
             this.mealTimeLeft = 30;    
 
-            // 注文ロジック
             if (menuList && menuList.length > 0) {
                 const randomIndex = Math.floor(Math.random() * menuList.length);
                 this.orderedItem = menuList[randomIndex];
@@ -601,11 +559,8 @@
                 }
             }
             
-            // 【修正】満足度（Patience）の減り方を調整し、ゴミ箱効果を適用
-            const baseRate = this.status === 'Eating' ?
-                0.3 : 1.0; 
+            const baseRate = this.status === 'Eating' ? 0.3 : 1.0; 
             const garbageCanEffect = game.hasGarbageCan ? 0.8 : 1.0;
-            // ゴミ箱があれば20%減速
 
             this.patience -= deltaTime * baseRate * garbageCanEffect;
             if (this.patience <= 0) {
@@ -616,7 +571,7 @@
 
 
     // =========================================================
-    // 1. GameManager (ゲームの頭脳)
+    // 1. GameManager (ゲームの頭脳) - ロード処理を重点的に修正
     // =========================================================
     class GameManager {
         constructor() {
@@ -626,8 +581,6 @@
             this.time = 0;
             this.isPaused = false;
             this.isGameRunning = false;
-            // ゲームが実行中か
-
             this.storeType = null;
             this.location = null;
             this.currentSeats = 0;
@@ -642,12 +595,10 @@
 
             this.customerSpawnTimer = 0;
             this.customerSpawnInterval = 10;
-            
-            // 【追加】アイテムの所有状況
             this.hasGarbageCan = false;
         }
         
-        // 【追加】ゲームの状態を初期値にリセットする関数
+        // 【修正】resetGameで初期設定をクリア
         resetGame() {
             this.asset = 15000000;
             this.reputation = 3;
@@ -678,14 +629,14 @@
             this.location = settings.location;
             this.currentSeats = settings.currentSeats;
 
+            // 初期メニューはMenuItemクラスのインスタンスとして格納
             this.menu = settings.initialMenu.map(itemData => new MenuItem(itemData.name, itemData.basePrice, itemData.cost));
-            // 席データの初期化
+            
             this.seatsData = [];
             for (let i = 0; i < this.currentSeats / 2; i++) {
                 this.seatsData.push({ id: i + 1, isOccupied: false, numGuests: 0, customerId: null });
             }
 
-            // 初期従業員（ロード時以外はここで初期化）
             if (this.employees.length === 0) {
                  this.employees = [new Employee('標準'), new Employee('標準'), new Employee('ベテラン'), new Employee('ポンコツ')];
             }
@@ -702,7 +653,6 @@
 
         update(deltaTime) {
             if (this.isPaused) return;
-            // 現実5分(300秒)でゲーム時間600を達成するための速度 (600 / 300 = 2.0)
             const GAME_SPEED = 2.0;
             this.time += deltaTime * GAME_SPEED; 
 
@@ -719,7 +669,6 @@
                 if (customer.status === 'Paying') {
                     this.removeCustomer(customer, customer.seatId, true);
                 } else if (customer.status === 'Done') {
-  
                     this.removeCustomer(customer, customer.seatId, false);
                 }
             });
@@ -727,6 +676,8 @@
 
             this.updateDisplay();
         }
+
+        // ... (spawnCustomer, removeCustomer, processEmployeeTasks, completeTask は省略) ...
 
         // --- 客の生成と管理 ---
         spawnCustomer(deltaTime) {
@@ -758,7 +709,6 @@
                     
                     this.customers.push(customer);
                     terop(`${numPeople}人組（${orderType}注文）が来店し、席 ${customer.seatId} に着席。注文: ${customer.orderedItem.name}`);
-                    // 顧客生成間隔の再計算
                     this.customerSpawnInterval = Math.random() * 10 + 5;
                     if (orderType === 'タブレット') {
                         this.cookQueue.push({ customer: customer });
@@ -792,31 +742,25 @@
             this.employees.forEach(employee => {
                 let task = this.employeeTasks.find(t => t.employee === employee);
                 
-           
-             if (task) {
+                if (task) {
                     task.timeLeft -= deltaTime;
 
                     if (task.timeLeft <= 0) {
                         this.completeTask(task);
-                       
-             this.employeeTasks = this.employeeTasks.filter(t => t !== task);
+                        this.employeeTasks = this.employeeTasks.filter(t => t !== task);
                         task = null;
                     }
                 }
 
                 if (!task) {
-             
-                // 優先度1: 注文受付 (手動注文の客)
                     const manualCustomer = this.customers.find(c => c.status === 'WaitOrder' && c.orderType === '手動');
                     if (manualCustomer) {
                         const baseTime = 5; 
-         
                         this.employeeTasks.push({ employee: employee, taskType: 'order_taking', target: manualCustomer, timeLeft: employee.getProcessTime(baseTime) });
-                        manualCustomer.status = 'WaitCook'; // 注文受付タスク中も一応待機状態のまま
+                        manualCustomer.status = 'WaitCook';
                         return;
                     }
 
-                    // 優先度2: 調理タスク
                     if (this.cookQueue.length > 0) {
                         const cookItem = this.cookQueue.shift();
                         const baseTime = 15; 
@@ -838,6 +782,7 @@
                 terop(`調理完了！席${customer.seatId}の食事提供を開始しました。`);
             }
         }
+
 
         // --- ゲームの表示更新 ---
         updateDisplay() {
@@ -861,23 +806,18 @@
                     if (customer) {
                         if (customer.status === 'Eating' || customer.status === 'Paying') {
                             className = 'seat-occupied-eat';
-             
                             statusText = `食事中 (${seat.numGuests}人)`;
                         } else {
                             className = 'seat-occupied-wait';
-                          
                             statusText = `待機中 (${seat.numGuests}人)<br>満足度: ${customer.patience.toFixed(0)}`;
                         }
                     }
                 }
                 
-                return `<div 
-                    class="${className}">席 ${seat.id}<br>${statusText}</div>`;
+                return `<div class="${className}">席 ${seat.id}<br>${statusText}</div>`;
             }).join('');
-            // アイテム表示の更新
-            document.getElementById('garbage-can-status').textContent = this.hasGarbageCan ?
-                '✅ 購入済み' : '❌ 未購入';
             
+            document.getElementById('garbage-can-status').textContent = this.hasGarbageCan ? '✅ 購入済み' : '❌ 未購入';
             document.getElementById('employee-count').textContent = this.employees.length;
             document.getElementById('wait-order-count').textContent = this.customers.filter(c => c.status === 'WaitOrder' && c.orderType === '手動').length;
             document.getElementById('wait-cook-count').textContent = this.cookQueue.length;
@@ -887,20 +827,22 @@
                 let taskDesc = '待機中...';
                 if (task) {
                     taskDesc = task.taskType === 'order_taking' ? 
-       
                          `注文受付中 (${task.timeLeft.toFixed(1)}s)` : 
                         `調理中 (${task.timeLeft.toFixed(1)}s)`;
                 }
                 return `
-                    <p style="margin: 
-                        5px 0; border-bottom: 1px dotted #eee;">
+                    <p style="margin: 5px 0; border-bottom: 1px dotted #eee;">
                         **${emp.grade}** (${emp.speedMultiplier}x): ${taskDesc}
                     </p>
                 `;
             }).join('');
             const waitingCustomers = this.customers.filter(c => c.status !== 'Eating' && c.status !== 'Paying');
             let waitingDetails = '';
-            waitingCustomers.forEach(c => { const statusText = c.status === 'WaitOrder' ? '注文待ち' : (c.status === 'WaitCook' ? '調理待ち' : '提供待ち'); const item = c.orderedItem ? c.orderedItem.name : '不明'; waitingDetails += `<p style="margin: 5px 0; font-size: 0.9em; border-bottom: 1px dotted #eee;"> 席${c.seatId} (${c.numPeople}人) - ${statusText} <br> 品: ${item} x ${c.numPeople} (${c.billAmount.toLocaleString()}円) </p>`; });
+            waitingCustomers.forEach(c => { 
+                const statusText = c.status === 'WaitOrder' ? '注文待ち' : (c.status === 'WaitCook' ? '調理待ち' : '提供待ち'); 
+                const item = c.orderedItem ? c.orderedItem.name : '不明'; 
+                waitingDetails += `<p style="margin: 5px 0; font-size: 0.9em; border-bottom: 1px dotted #eee;"> 席${c.seatId} (${c.numPeople}人) - ${statusText} <br> 品: ${item} x ${c.numPeople} (${c.billAmount.toLocaleString()}円) </p>`; 
+            });
             document.getElementById('waiting-customer-details').innerHTML = waitingDetails || '<p>待ち客なし</p>';
         }
         
@@ -910,9 +852,15 @@
             if (gameLoopRef) cancelAnimationFrame(gameLoopRef);
 
             const totalCost = this.employees.reduce((sum, emp) => sum + emp.dailyCost, 0);
-            this.asset -= totalCost;
+            
+            // チートモードチェック
+            const isInfinite = document.getElementById('infinite-asset-toggle').checked;
 
-            if (this.asset <= 0 && !document.getElementById('infinite-asset-toggle').checked) {
+            if (!isInfinite) {
+                this.asset -= totalCost;
+            }
+
+            if (this.asset <= 0 && !isInfinite) {
                 alert('総資産が0円以下になりました。ゲームオーバーです。');
                 this.isGameRunning = false;
                 showScreen('home-screen');
@@ -927,26 +875,25 @@
                 this.customers = [];
                 this.cookQueue = [];
                 this.employeeTasks = [];
-                // 【修正】顧客生成間隔をリセット
                 this.customerSpawnTimer = 0;
                 this.customerSpawnInterval = 10;
-                // 次の日のゲームループを再開
                 if (this.isGameRunning) gameLoop(0);
             }, 3000);
         }
 
-        // --- セーブ/ロード用データ取得 --- 
         getGameData() {
             return {
                 asset: this.asset,
                 reputation: this.reputation,
                 day: this.day,
                 storeType: this.storeType,
-                currentSeats: this.currentSeats, // 【追加】currentSeatsを保存
+                location: this.location, // locationも追加
+                currentSeats: this.currentSeats,
                 employees: this.employees.map(e => ({ id: e.id, grade: e.grade })),
                 menu: this.menu.map(m => ({ name: m.name, currentPrice: m.currentPrice, cost: m.cost })),
-                settings: currentSettings, // 【追加】アイテムの所有状況を保存
-                hasGarbageCan: this.hasGarbageCan
+                // currentSettingsは不要。必要な情報は全てGameManagerに含める。
+                hasGarbageCan: this.hasGarbageCan,
+                isInfiniteAsset: document.getElementById('infinite-asset-toggle').checked
             };
         }
     }
@@ -960,6 +907,22 @@
         document.getElementById(screenId).classList.add('active');
     }
 
+    // 【追加】スマホモード切り替え
+    function toggleMobileMode() {
+        const body = document.body;
+        const btn = document.getElementById('mode-toggle-btn');
+        if (body.classList.contains('mobile-mode')) {
+            body.classList.remove('mobile-mode');
+            btn.textContent = 'PCモード';
+            terop('PCモードに切り替えました。');
+        } else {
+            body.classList.add('mobile-mode');
+            btn.textContent = 'スマホモード';
+            terop('スマホモードに切り替えました。');
+        }
+    }
+
+    // ... (selectType, selectLocation, changeSeats, updateSeatSize は省略) ...
     function selectType(type) {
         currentSettings.type = type;
         document.getElementById('type-info').textContent = `選択中の種類: ${type}`;
@@ -990,23 +953,23 @@
     }
 
     function updateSeatSize() {
-        const locCost = costDetails[currentSettings.location] ||
-            0;
+        const locCost = costDetails[currentSettings.location] || 0;
         const baseCost = costDetails.BASE;
-        const seatCost = 1000000; // 2席あたり100万円
+        const seatCost = 1000000;
         currentSettings.initialCost = baseCost + (currentSettings.currentSeats / 2) * seatCost;
         document.getElementById('current-seats').textContent = currentSettings.currentSeats;
         document.getElementById('current-tables').textContent = currentSettings.currentSeats / 2;
         document.getElementById('initial-cost').textContent = currentSettings.initialCost.toLocaleString();
     }
     
-    // 省略... (setupMenuSelection, toggleMenuSelection, showConfirmation, resetSetup は変更なし)
-
     function setupMenuSelection() {
         const menuArea = document.getElementById('menu-selection-area');
         menuArea.innerHTML = '';
         const menuItems = MENU_DATA[currentSettings.type];
         if (!menuItems) return;
+
+        currentSettings.initialMenu = []; // メニュータイプが変わったらリセット
+        document.getElementById('selected-menu-count').textContent = 0;
 
         menuItems.forEach(item => {
             const button = document.createElement('button');
@@ -1071,13 +1034,21 @@
             return;
         }
         game.resetGame();
-        // 【修正】チートモードの場合は初期資産を100億に設定
+        
         const isCheat = getUrlParameter('cheat') === 'true';
         const initialAsset = isCheat ? 10000000000 : 15000000;
-        document.getElementById('infinite-asset-toggle').checked = isCheat; // チートモードで起動した場合は資産無限チェックボックスもONにする
+        
+        // チートモードで起動した場合は資産無限チェックボックスもONにし、ゲーム側の状態も設定
+        const infiniteAssetToggle = document.getElementById('infinite-asset-toggle');
+        infiniteAssetToggle.checked = isCheat;
+        if (isCheat) game.asset = initialAsset;
 
-        // 資産から初期費用を差し引く
-        game.asset = initialAsset - currentSettings.initialCost;
+        // 資産から初期費用を差し引く（チートONの場合は差し引かない）
+        if (!isCheat) {
+             game.asset = initialAsset - currentSettings.initialCost;
+        } else {
+             game.asset = initialAsset;
+        }
         
         game.initializeGame(currentSettings);
         showScreen('game-screen');
@@ -1090,7 +1061,6 @@
         }
     }
 
-    // ゲームをやめるボタンの処理
     function quitGame() {
         if (confirm('ゲームを終了してホーム画面に戻りますか？セーブしていないデータは失われます。')) {
             game.isGameRunning = false;
@@ -1099,7 +1069,7 @@
         }
     }
 
-    // --- モーダル操作 --- 
+    // --- モーダル操作、従業員管理、メニュー管理 (省略、大きな変更なし) --- 
     function openModal(modalId) {
         document.getElementById(modalId).style.display = 'block';
         game.isPaused = true;
@@ -1131,7 +1101,6 @@
         openModal('item-modal');
     }
 
-    // --- 従業員管理 --- 
     function updateEmployeeSettings() {
         const listElement = document.getElementById('employee-list-settings');
         listElement.innerHTML = '';
@@ -1151,7 +1120,9 @@
     function addEmployee(grade) {
         const newEmployee = new Employee(grade);
         game.employees.push(newEmployee);
-        game.asset -= newEmployee.dailyCost; // 日当を先に支払う
+        if (!document.getElementById('infinite-asset-toggle').checked) {
+            game.asset -= newEmployee.dailyCost;
+        }
         terop(`${grade}の従業員を雇用しました！日当${newEmployee.dailyCost.toLocaleString()}円を支払いました。`);
         updateEmployeeSettings();
         game.updateDisplay();
@@ -1170,7 +1141,7 @@
     function toggleInfiniteAsset() {
         const isChecked = document.getElementById('infinite-asset-toggle').checked;
         if (isChecked) {
-            game.asset = 10000000000; // 100億円
+            game.asset = 10000000000;
             terop('チートON: 資産を100億円に設定しました。');
         } else {
             terop('チートOFF: 資産が有限に戻りました。');
@@ -1178,17 +1149,16 @@
         game.updateDisplay();
     }
 
-    // --- アイテム管理 --- 
+    // --- アイテム管理（席拡張ロジック含む） --- 
     function updateItemPurchaseUI() {
         const listElement = document.getElementById('item-list-purchase');
         listElement.innerHTML = '';
-        const maxSeatsLimit = 20; // 【追加】席数拡張の上限
+        const maxSeatsLimit = 20;
 
         Object.keys(ITEM_DATA).forEach(key => {
             const item = ITEM_DATA[key];
             const isOwned = (key === 'GARBAGE_CAN' && game.hasGarbageCan);
             
-            // 【追加】席拡張アイテムの判定と制限
             const isSeatExpansion = key === 'SEAT_EXPANSION';
             const isMaxSeats = isSeatExpansion && game.currentSeats >= maxSeatsLimit;
 
@@ -1199,10 +1169,9 @@
             if (isOwned) {
                 buttonHTML = `<span style="color: green; font-weight: bold;">購入済み</span>`;
             } else if (isMaxSeats) {
-                // 【追加】上限に達した場合
                 buttonHTML = `<span style="color: orange; font-weight: bold;">上限(${maxSeatsLimit}席)に到達</span>`;
             } else {
-                const isDisabled = game.asset < item.cost;
+                const isDisabled = game.asset < item.cost && !document.getElementById('infinite-asset-toggle').checked; // チート時はお金不要
                 buttonHTML = `<button onclick="purchaseItem('${key}', ${item.cost})" 
                                 style="background-color: ${isDisabled ? '#ccc' : '#4CAF50'};" 
                                 ${isDisabled ? 'disabled' : ''}> 
@@ -1222,7 +1191,8 @@
     }
 
     function purchaseItem(key, cost) {
-        if (game.asset < cost) {
+        const isInfinite = document.getElementById('infinite-asset-toggle').checked;
+        if (game.asset < cost && !isInfinite) {
             terop('お金が足りません！');
             return;
         }
@@ -1232,7 +1202,6 @@
             return;
         }
         
-        // 【追加】席拡張のロジック
         if (key === 'SEAT_EXPANSION') {
             const maxSeatsLimit = 20;
             if (game.currentSeats >= maxSeatsLimit) {
@@ -1240,26 +1209,26 @@
                 return;
             }
             
-            // 支払い処理
-            game.asset -= cost;
+            if (!isInfinite) {
+                game.asset -= cost;
+            }
             
             const addedSeats = 2;
             const newSeatCount = game.currentSeats + addedSeats;
-            const tableId = (game.currentSeats / 2) + 1; // 新しいテーブルID
+            const tableId = (game.currentSeats / 2) + 1;
             
-            // 席データの追加
             game.seatsData.push({ id: tableId, isOccupied: false, numGuests: 0, customerId: null });
             game.currentSeats = newSeatCount;
 
             terop(`席数を${addedSeats}席拡張しました！現在の席数: ${newSeatCount}席`);
-            game.updateDisplay(); // 席マップを更新
+            game.updateDisplay();
             updateItemPurchaseUI();
-            return; // 処理完了
+            return;
         }
 
-
-        // 支払い処理 (SEAT_EXPANSION以外)
-        game.asset -= cost;
+        if (!isInfinite) {
+            game.asset -= cost;
+        }
         
         if (key === 'GARBAGE_CAN') {
             game.hasGarbageCan = true;
@@ -1273,7 +1242,6 @@
         updateItemPurchaseUI();
     }
 
-    // --- メニュー管理 --- 
     function updateMenuSettings() {
         const listElement = document.getElementById('current-menu-list');
         listElement.innerHTML = '';
@@ -1330,7 +1298,7 @@
                 game.menu.push(new MenuItem(item.name, item.basePrice, item.cost));
                 terop(`${item.name}をメニューに追加しました！`);
                 updateMenuSettings();
-                optionsArea.style.display = 'none'; // 追加後は非表示に戻す
+                optionsArea.style.display = 'none';
             };
             optionsArea.appendChild(button);
         });
@@ -1361,9 +1329,10 @@
     function checkSavedGame() {
         const savedData = localStorage.getItem(SAVE_KEY);
         if (savedData) {
-            const { data: gameData, saveTime } = JSON.parse(savedData);
+            const { data: gameData } = JSON.parse(savedData);
             loadGameData(gameData);
-            terop(`セーブデータ（Day ${gameData.day}）を読み込みました。`);
+            // ロードボタンのクリック時は、そのままstartGameのCONFIRMに進む
+            // startGameでinitializeGameが呼ばれるため、ここではロードはせず、データ設定のみ
         } else {
             terop('セーブデータが見つかりませんでした。新規ゲームを開始します。');
         }
@@ -1375,8 +1344,9 @@
         game.reputation = gameData.reputation;
         game.day = gameData.day;
         game.storeType = gameData.storeType;
+        game.location = gameData.location; // locationを復元
         game.hasGarbageCan = gameData.hasGarbageCan;
-        game.currentSeats = gameData.currentSeats || gameData.settings.currentSeats; // 【修正】currentSeatsもロード
+        game.currentSeats = gameData.currentSeats;
 
         // 従業員の復元
         game.employees = gameData.employees.map(e => new Employee(e.grade, e.id));
@@ -1384,27 +1354,37 @@
         // メニューの復元
         game.menu = gameData.menu.map(m => new MenuItem(m.name, m.currentPrice, m.cost));
         
-        // 設定情報の復元（初期設定画面で使用される）
-        currentSettings = gameData.settings;
-        // ロードしたcurrentSeatsを使ってseatsDataを再構築
+        // 資産無限チートの状態を復元
+        document.getElementById('infinite-asset-toggle').checked = gameData.isInfiniteAsset || false;
+
+        // 初期設定画面表示のための currentSettings の設定
+        currentSettings = { 
+            type: game.storeType, 
+            location: game.location, 
+            maxSeats: MENU_DATA[game.storeType] ? MENU_DATA[game.storeType].maxSeats : 10, // maxSeatsは静的データから取得すべきだが、初期画面表示のため暫定
+            currentSeats: game.currentSeats, 
+            initialCost: 0, // ロード時には初期費用は関係ない
+            initialMenu: game.menu.map(m => ({ name: m.name, basePrice: m.currentPrice, cost: m.cost }))
+        };
+
+        // UI表示の更新（開始画面用）
+        document.getElementById('type-info').textContent = `選択中の種類: ${currentSettings.type}`;
+        document.getElementById('location-info').textContent = `選択中の場所: ${currentSettings.location} (席数はロードデータ適用)`;
+        document.getElementById('current-seats').textContent = currentSettings.currentSeats;
+        document.getElementById('current-tables').textContent = currentSettings.currentSeats / 2;
+        document.getElementById('selected-menu-count').textContent = currentSettings.initialMenu.length;
+        
+        // ロード時に必要な画面要素を表示
+        document.getElementById('step-location').style.display = 'block';
+        document.getElementById('step-size').style.display = 'block';
+        document.getElementById('step-menu').style.display = 'block';
+        document.getElementById('step-start').style.display = 'block';
+
+        // 席マップを再構築
         game.seatsData = [];
         for (let i = 0; i < game.currentSeats / 2; i++) {
             game.seatsData.push({ id: i + 1, isOccupied: false, numGuests: 0, customerId: null });
         }
-
-        // UIの初期化とゲーム開始
-        game.isPaused = false;
-        game.isGameRunning = true;
-        document.getElementById('store-type-display').textContent = game.storeType;
-        document.getElementById('store-location-display').textContent = game.location;
-        game.customers = []; // ロード時は客をリセット
-        game.cookQueue = [];
-        game.employeeTasks = [];
-        game.updateDisplay();
-        showScreen('game-screen');
-        showWarningOnExit();
-        if (gameLoopRef) cancelAnimationFrame(gameLoopRef);
-        gameLoop(0);
     }
 
     function saveGame() {
@@ -1415,16 +1395,14 @@
         try {
             const gameData = game.getGameData();
             const saveTime = new Date().toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            // ローカルストレージに保存
             localStorage.setItem(SAVE_KEY, JSON.stringify({ data: gameData, saveTime }));
             terop(`ゲームをセーブしました！ (Local Storage)`);
-            checkSavedGame();
+            loadGameFromHome(); // ホーム画面のロード情報を更新
         } catch (e) {
             terop('セーブ中にエラーが発生しました。');
         }
     }
 
-    // JSONファイルとしてセーブデータをダウンロードする関数
     function downloadSaveFile() {
         if (!game.isGameRunning) {
             terop('ゲームが開始されていません。');
@@ -1433,7 +1411,6 @@
         try {
             const gameData = game.getGameData();
             const jsonString = JSON.stringify({ data: gameData, saveTime: new Date().toLocaleString('ja-JP') }, null, 2);
-            // 見やすいように整形
             const blob = new Blob([jsonString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1449,12 +1426,11 @@
         }
     }
 
-    // JSONファイルを読み込んでゲームをロードする関数
     function loadGameFromFile(event) {
         const file = event.target.files[0];
         if (!file) return;
         if (!confirm('ファイルからゲームをロードしますか？現在のゲームデータは上書きされます。')) {
-            event.target.value = ''; // 選択をリセット
+            event.target.value = '';
             return;
         }
         const reader = new FileReader();
@@ -1462,15 +1438,16 @@
             try {
                 const fileContent = e.target.result;
                 const { data: gameData } = JSON.parse(fileContent);
-                // ロード処理を実行
-                loadGameData(gameData);
-                closeModal('settings-modal'); // モーダルを閉じる
+                
+                loadGameData(gameData); // ロード処理を実行し、currentSettingsを設定
+                startGame(); // ロードデータでゲームを開始
+                closeModal('settings-modal');
                 terop(`JSONファイルからゲームをロードしました！Day ${game.day}から再開します。`);
             } catch (error) {
                 terop('ファイルの読み込みに失敗しました。JSON形式が正しいか確認してください。');
                 console.error('File load error:', error);
             }
-            event.target.value = ''; // 選択をリセット
+            event.target.value = '';
         };
         reader.readAsText(file);
     }
@@ -1493,7 +1470,6 @@
     }
 
     // --- ユーティリティ関数 ---
-    // 【追加】URLパラメータ取得関数
     function getUrlParameter(name) {
         name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
         const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
@@ -1505,10 +1481,8 @@
     const game = new GameManager();
     let gameLoopRef = null;
     let currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] };
-    let isInfiniteAsset = false; // 無制限チートは別で管理
-
+    
     window.onload = () => {
-        // URLパラメータにチートフラグがある場合は、強制的に...
         if (getUrlParameter('cheat') === 'true') {
             document.getElementById('home-screen').querySelector('a').style.display = 'inline-block';
         }
