@@ -505,13 +505,36 @@
             this.customerSpawnTimer = 0;
             this.customerSpawnInterval = 10;
         }
+        
+        // 【追加】ゲームの状態を初期値にリセットする関数
+        resetGame() {
+            this.asset = 15000000;
+            this.reputation = 3;
+            this.day = 1;
+            this.time = 0;
+            this.isPaused = false;
+            this.isGameRunning = false; 
+
+            this.storeType = null;
+            this.location = null;
+            this.currentSeats = 0;
+            
+            this.seatsData = [];
+            this.customers = [];
+            this.employees = []; // 新規ゲームでは従業員リストもリセット
+            this.menu = [];
+
+            this.cookQueue = [];
+            this.employeeTasks = [];
+            this.customerSpawnTimer = 0;
+            this.customerSpawnInterval = 10;
+        }
 
         initializeGame(settings) {
             this.isGameRunning = true;
             this.storeType = settings.type;
             this.location = settings.location;
             this.currentSeats = settings.currentSeats;
-            // 資産の初期設定はloadGame/startGame側で行うためここでは行わない
 
             this.menu = settings.initialMenu.map(itemData => new MenuItem(itemData.name, itemData.basePrice, itemData.cost));
             
@@ -601,8 +624,10 @@
                     this.customers.push(customer);
                     terop(`${numPeople}人組（${orderType}注文）が来店し、席 ${customer.seatId} に着席。注文: ${customer.orderedItem.name}`);
 
+                    // 顧客生成間隔の再計算
+                    // 評判によって間隔が伸びるようにするとゲーム性が増しますが、ここではランダム値を再設定
                     this.customerSpawnInterval = Math.random() * 10 + 5;
-
+                    
                     if (orderType === 'タブレット') {
                         this.cookQueue.push({ customer: customer });
                     }
@@ -770,6 +795,10 @@
                 this.cookQueue = [];
                 this.employeeTasks = [];
                 
+                // 【修正】顧客生成間隔をリセット
+                this.customerSpawnTimer = 0;
+                this.customerSpawnInterval = 10; 
+                
                 // 次の日のゲームループを再開
                 if (this.isGameRunning) gameLoop(0); 
             }, 3000);
@@ -923,6 +952,9 @@
             return;
         }
         
+        // 【修正】まずインスタンスを初期状態にリセット
+        game.resetGame(); 
+        
         // 資産から初期費用を差し引く
         game.asset = 15000000 - currentSettings.initialCost;
 
@@ -937,7 +969,7 @@
         gameLoop(0);
     }
     
-    // 【追加】ゲームをやめるボタンの処理
+    // ゲームをやめるボタンの処理
     function quitGame() {
         if (confirm('ゲームを終了してホーム画面に戻りますか？セーブしていないデータは失われます。')) {
             game.isGameRunning = false;
@@ -1172,6 +1204,9 @@
     
     // loadGameとloadGameFromFileから共通して呼ばれるロードロジック
     function loadGameData(gameData) {
+        // 【修正】ロード時もまずリセットしてから上書き
+        game.resetGame();
+        
         currentSettings = gameData.settings;
         game.initializeGame(currentSettings); 
 
@@ -1189,7 +1224,7 @@
         gameLoop(0);
     }
 
-    // 【修正】localStorageからのロード関数も上記 loadGameData を利用するように修正
+    // localStorageからのロード関数
     function loadGame() {
         const savedDataString = localStorage.getItem(SAVE_KEY);
         if (!savedDataString) {
@@ -1252,7 +1287,6 @@
     }
 
     // --- グローバル変数の初期化と初期処理 ---
-    // (エラー修正のため、クラスと関数の定義後にインスタンス化を行う)
     const game = new GameManager();
     let gameLoopRef = null;
     let currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] };
