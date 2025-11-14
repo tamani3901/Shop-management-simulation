@@ -1361,7 +1361,7 @@
         currentSettings = { 
             type: game.storeType, 
             location: game.location, 
-            maxSeats: MENU_DATA[game.storeType] ? MENU_DATA[game.storeType].maxSeats : 10, // maxSeatsは静的データから取得すべきだが、初期画面表示のため暫定
+            maxSeats: 10, // ロード時は使用されないが、初期化エラー防止のため適当な値を設定
             currentSeats: game.currentSeats, 
             initialCost: 0, // ロード時には初期費用は関係ない
             initialMenu: game.menu.map(m => ({ name: m.name, basePrice: m.currentPrice, cost: m.cost }))
@@ -1480,7 +1480,8 @@
     // --- グローバル変数の初期化と初期処理 ---
     const game = new GameManager();
     let gameLoopRef = null;
-    let currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] };
+    // 【重要修正】currentSettingsをグローバルで正しく初期化
+    let currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] }; 
     
     window.onload = () => {
         if (getUrlParameter('cheat') === 'true') {
