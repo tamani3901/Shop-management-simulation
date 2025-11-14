@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+p<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -18,6 +18,11 @@
             min-height: 100vh;
         }
 
+        /* mobile-mode を body に付け外しすることで切り替え */
+        body.mobile-mode {
+            padding: 10px;
+        }
+
         #game-container {
             background-color: #fff;
             border-radius: 12px;
@@ -25,6 +30,13 @@
             width: 90%;
             max-width: 900px;
             padding: 30px;
+        }
+
+        body.mobile-mode #game-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 16px;
+            border-radius: 10px;
         }
 
         h1, h2 {
@@ -77,6 +89,15 @@
             gap: 15px;
         }
 
+        /* モバイルモードでは1カラムに */
+        body.mobile-mode #game-ui {
+            grid-template-areas:
+                "header"
+                "main"
+                "sidebar";
+            grid-template-columns: 1fr;
+        }
+
         #header-bar {
             grid-area: header;
             display: flex;
@@ -84,6 +105,20 @@
             align-items: center;
             padding: 10px 0;
             border-bottom: 1px solid #ddd;
+            gap: 8px;
+        }
+
+        /* ヘッダーのボタン群を折りたたみやすくする */
+        #header-bar .left-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        /* スマホモードの大きめボタン */
+        body.mobile-mode .button-list button, body.mobile-mode .action-btn {
+            padding: 12px 14px;
+            font-size: 16px;
         }
 
         #main-game-area {
@@ -94,6 +129,11 @@
             padding: 20px;
         }
         
+        body.mobile-mode #main-game-area {
+            min-height: 300px;
+            padding: 12px;
+        }
+
         #sidebar-info {
             grid-area: sidebar;
             background-color: #f9f9f9;
@@ -128,6 +168,12 @@
             z-index: 1000;
         }
         
+        #seat-map {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
         #seat-map div {
             display: inline-block;
             margin: 10px;
@@ -137,6 +183,19 @@
             font-size: 0.9em;
             min-width: 100px;
             text-align: center;
+        }
+
+        /* モバイルではグリッドにして見やすく */
+        body.mobile-mode #seat-map {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+        }
+        body.mobile-mode #seat-map div {
+            margin: 0;
+            padding: 12px;
+            font-size: 1em;
+            min-width: 0;
         }
 
         .seat-empty { background-color: #ddffdd; border: 1px solid #4CAF50; }
@@ -178,6 +237,13 @@
             text-align: right;
             margin-left: 10px;
         }
+
+        /* 小さいスクリーンのレスポンシブ（補助） */
+        @media (max-width: 480px) {
+            #game-container { padding: 12px; }
+            #main-game-area { padding: 12px; }
+            .modal-content { width: 92%; padding: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -217,13 +283,14 @@
         </div>
 
         <div id="step-size" class="option-group" style="display: none;">
-            <h3>3. 店の大きさを決めてください (最大 <span id="max-seats">?</span> 席)</h3>
+            <h3>3. 店の大きさを決めてください (場所による制限あり、最大20席)</h3>
             <p>現在の席数: <span id="current-seats">0</span> 席 (2人掛けテーブル <span id="current-tables">0</span> 個)</p>
             <p>初期費用: <span id="initial-cost">0</span> 円</p>
             <div class="button-list">
                 <button onclick="changeSeats(-2)">席を減らす</button>
                 <button onclick="changeSeats(2)">席を増やす</button>
             </div>
+            <p style="font-size:0.9em;color:#666;margin-top:8px;">※ゲーム開始後も設定から席数を変更可能（上限20席、偶数のみ）</p>
         </div>
         
         <div id="step-menu" class="option-group" style="display: none;">
@@ -254,12 +321,13 @@
     <div id="game-screen" class="screen">
         <div id="game-ui">
             <div id="header-bar">
-                <div>
+                <div class="left-buttons">
                     <button onclick="showMenu()" class="action-btn">メニュー</button>
                     <button onclick="showSettings()" class="action-btn">設定</button>
                     <button onclick="showItems()" class="action-btn" style="background-color: #3f51b5;">アイテム</button>
                     <button onclick="saveGame()" class="action-btn" style="background-color: #007bff;">セーブ</button>
                     <button onclick="quitGame()" class="action-btn" style="background-color: #f44336;">やめる</button>
+                    <button onclick="toggleMobileMode()" class="action-btn" id="mobile-toggle-btn" style="background-color: #009688;">スマホモード</button>
                 </div>
                 <div id="day-time-display">
                     <span id="day-display">Day 1</span> | <span id="time-display">00:00</span>
@@ -308,6 +376,19 @@
                 <button onclick="addEmployee('標準')">標準 (20万)</button>
                 <button onclick="addEmployee('ポンコツ')">ポンコツ (10万)</button>
             </div>
+        </div>
+
+        <div class="option-group">
+            <h3>席数の変更（ゲーム中に反映されます）</h3>
+            <p>現在の席数: <strong id="in-game-seats-display">0</strong> 席</p>
+            <div class="button-list">
+                <button onclick="changeSeatsInGame(-2)">席を減らす</button>
+                <button onclick="changeSeatsInGame(2)">席を増やす</button>
+            </div>
+            <p style="font-size:0.9em;color:#666;margin-top:8px;">
+                上限: 20席。席は偶数である必要があります。<br>
+                減らす場合、削除対象の席に客がいると減らせません。
+            </p>
         </div>
 
         <div class="option-group">
@@ -419,7 +500,8 @@
     
     // --- 共通変数（初期化キー） ---
     const SAVE_KEY = 'restaurant_tycoon_save';
-    
+    const GLOBAL_MAX_SEATS = 20; // 追加: ゲーム中変更できる最大席数
+
     // =========================================================
     // 0. クラス定義
     // =========================================================
@@ -559,7 +641,7 @@
             this.cookQueue = [];
             this.employeeTasks = [];
             this.customerSpawnTimer = 0;
-            this.customerSpawnInterval = 10;
+            this.customerSpawnInterval = 10; 
             
             this.hasGarbageCan = false;
         }
@@ -738,6 +820,60 @@
             }
         }
 
+        // --- 席数をゲーム中に変更する（増やす/減らす） ---
+        changeSeatsInGame(newSeatCount) {
+            // newSeatCount は偶数であることを期待
+            if (newSeatCount < 2 || newSeatCount > GLOBAL_MAX_SEATS || newSeatCount % 2 !== 0) {
+                terop(`席数は2～${GLOBAL_MAX_SEATS}の偶数で指定してください。`);
+                return false;
+            }
+
+            // 減らす場合、残す席数に対して既に埋まってる席の数が超えていないかチェック
+            const occupiedCount = this.seatsData.filter(s => s.isOccupied).length * 2; // テーブル数→席数換算目安
+            // 実際には seat.id はテーブル単位（2席）なので occupied テーブル数 *2 は座席数とする簡易判定
+            if (newSeatCount < this.currentSeats) {
+                // 何テーブルになるか
+                const newTableCount = newSeatCount / 2;
+                const occupiedTables = this.seatsData.filter(s => s.isOccupied).length;
+                if (occupiedTables > newTableCount) {
+                    terop('減らせません：削除対象となる席に客が座っています。先に空席にしてから減らしてください。');
+                    return false;
+                }
+            }
+
+            // 増減処理
+            const oldTableCount = this.seatsData.length;
+            const newTableCount = newSeatCount / 2;
+
+            if (newTableCount > oldTableCount) {
+                // 追加
+                for (let i = oldTableCount; i < newTableCount; i++) {
+                    this.seatsData.push({ id: i + 1, isOccupied: false, numGuests: 0, customerId: null });
+                }
+                this.currentSeats = newSeatCount;
+                terop(`${newSeatCount}席に増員しました。`);
+            } else if (newTableCount < oldTableCount) {
+                // 削除（空のテーブルのみ）
+                // 後ろから削除していく
+                for (let i = oldTableCount - 1; i >= newTableCount; i--) {
+                    if (this.seatsData[i].isOccupied) {
+                        terop('減らせません：削除対象のテーブルに客がいます。');
+                        return false;
+                    }
+                    this.seatsData.splice(i, 1);
+                }
+                this.currentSeats = newSeatCount;
+                terop(`${newSeatCount}席に減らしました。`);
+            } else {
+                terop('席数は変わりません。');
+            }
+
+            // 再描画とUI更新
+            this.updateDisplay();
+            document.getElementById('in-game-seats-display').textContent = this.currentSeats;
+            return true;
+        }
+
         // --- ゲームの表示更新 ---
         updateDisplay() {
             document.getElementById('asset-display').textContent = `資産: ${this.asset.toLocaleString()}円`;
@@ -803,6 +939,10 @@
                 </p>`;
             });
             document.getElementById('waiting-customer-details').innerHTML = waitingDetails || '<p>待ち客なし</p>';
+
+            // settings modal 表示用席数更新
+            const seatsDisplay = document.getElementById('in-game-seats-display');
+            if (seatsDisplay) seatsDisplay.textContent = this.currentSeats;
         }
 
         endOfDay() {
@@ -851,7 +991,10 @@
                 menu: this.menu.map(m => ({ name: m.name, currentPrice: m.currentPrice, cost: m.cost })),
                 settings: currentSettings,
                 // 【追加】アイテムの所有状況を保存
-                hasGarbageCan: this.hasGarbageCan
+                hasGarbageCan: this.hasGarbageCan,
+                // 保存用に席数と席データを持たせる
+                currentSeats: this.currentSeats,
+                seatsData: this.seatsData
             };
         }
     }
@@ -876,10 +1019,11 @@
 
     function selectLocation(location, maxSeats) {
         currentSettings.location = location;
-        currentSettings.maxSeats = maxSeats;
+        // 初期は場所の規定上限と、ゲーム全体上限の小さい方を表示
+        currentSettings.maxSeats = Math.min(maxSeats, GLOBAL_MAX_SEATS);
         
-        document.getElementById('location-info').textContent = `選択中の場所: ${location} (最大 ${maxSeats} 席)`;
-        document.getElementById('max-seats').textContent = maxSeats;
+        document.getElementById('location-info').textContent = `選択中の場所: ${location} (最大 ${currentSettings.maxSeats} 席)`;
+        document.getElementById('max-seats').textContent = currentSettings.maxSeats;
         
         currentSettings.currentSeats = 2;
         updateSeatSize();
@@ -891,8 +1035,10 @@
     function changeSeats(change) {
         const newSeats = currentSettings.currentSeats + change;
         
-        if (newSeats < 2 || newSeats > currentSettings.maxSeats || newSeats % 2 !== 0) {
-            terop('席数は2席から最大席数の間の偶数で設定してください。');
+        // start画面では場所制約とグローバル上限を考慮
+        const allowedMax = Math.min(currentSettings.maxSeats || GLOBAL_MAX_SEATS, GLOBAL_MAX_SEATS);
+        if (newSeats < 2 || newSeats > allowedMax || newSeats % 2 !== 0) {
+            terop(`席数は2～${allowedMax}の偶数で設定してください。`);
             return;
         }
 
@@ -1000,6 +1146,9 @@
         // 資産から初期費用を差し引く
         game.asset = initialAsset - currentSettings.initialCost;
 
+        // currentSettings に グローバル上限を反映（保存用）
+        currentSettings.maxSeats = Math.min(currentSettings.maxSeats || GLOBAL_MAX_SEATS, GLOBAL_MAX_SEATS);
+
         game.initializeGame(currentSettings);
         
         showScreen('game-screen');
@@ -1069,6 +1218,10 @@
             `;
             listElement.appendChild(item);
         });
+
+        // settings modal 内の席数表示を更新
+        const seatsDisplay = document.getElementById('in-game-seats-display');
+        if (seatsDisplay) seatsDisplay.textContent = game.currentSeats;
     }
 
     function addEmployee(grade) {
@@ -1319,6 +1472,10 @@
         game.resetGame();
         
         currentSettings = gameData.settings;
+        // 互換性を持たせるため currentSeats を優先して反映
+        if (gameData.currentSeats) currentSettings.currentSeats = gameData.currentSeats;
+        currentSettings.maxSeats = Math.min(currentSettings.maxSeats || GLOBAL_MAX_SEATS, GLOBAL_MAX_SEATS);
+
         game.initializeGame(currentSettings); 
 
         game.asset = gameData.asset;
@@ -1326,12 +1483,19 @@
         game.day = gameData.day;
         game.storeType = gameData.storeType;
         
-        game.employees = gameData.employees.map(e => new Employee(e.grade, e.id));
-        game.menu = gameData.menu.map(m => new MenuItem(m.name, m.currentPrice, m.cost));
+        game.employees = (gameData.employees || []).map(e => new Employee(e.grade, e.id));
+        game.menu = (gameData.menu || []).map(m => new MenuItem(m.name, m.currentPrice, m.cost));
         
         // 【追加】アイテムのロード
         game.hasGarbageCan = gameData.hasGarbageCan || false;
         
+        // 席データの復元（ある場合）
+        if (gameData.seatsData && Array.isArray(gameData.seatsData)) {
+            // seatsData をそのまま使いつつ currentSeats を合わせる
+            game.seatsData = gameData.seatsData;
+            game.currentSeats = gameData.currentSeats || (game.seatsData.length * 2);
+        }
+
         showScreen('game-screen');
         showWarningOnExit();
         if (gameLoopRef) cancelAnimationFrame(gameLoopRef);
@@ -1398,6 +1562,33 @@
         setTimeout(() => {
             teropElement.style.opacity = 0;
         }, 3000);
+    }
+
+    // --- 席数をゲーム中に増減するUIトリガー ---
+    function changeSeatsInGame(delta) {
+        if (!game.isGameRunning) {
+            terop('ゲーム開始後に設定してください。');
+            return;
+        }
+        const newSeats = game.currentSeats + delta;
+        if (newSeats < 2 || newSeats > GLOBAL_MAX_SEATS || newSeats % 2 !== 0) {
+            terop(`席数は2～${GLOBAL_MAX_SEATS}の偶数で指定してください。`);
+            return;
+        }
+        // 実行
+        const success = game.changeSeatsInGame(newSeats);
+        if (success) {
+            // 保存されている設定にも反映しておく
+            currentSettings.currentSeats = game.currentSeats;
+        }
+    }
+
+    // --- モバイルモード切替 ---
+    function toggleMobileMode() {
+        const isMobile = document.body.classList.toggle('mobile-mode');
+        const btn = document.getElementById('mobile-toggle-btn');
+        btn.textContent = isMobile ? 'PCモード' : 'スマホモード';
+        terop(isMobile ? 'スマホモードに切り替えました' : 'PCモードに戻しました');
     }
 
     // --- ユーティリティ関数 ---
