@@ -85,20 +85,6 @@
             box-sizing: border-box; 
             touch-action: manipulation; /* タッチの遅延回避 (iOS/Android) */
         }
-        /* --- ここから追加 --- */
-.button-list button,
-.action-btn,
-#seat-map div[onclick] {
-    pointer-events: auto !important;
-    touch-action: manipulation !important;
-}
-
-.button-list button * ,
-.action-btn * {
-    pointer-events: none !important;
-}
-/* --- 追加ここまで --- */
-
         
         /* 💡 修正: 子要素に pointer-events: none; を適用して親にクリックを通す */
         .button-list button > *, .action-btn > * {
@@ -1163,20 +1149,17 @@
                 const customer = this.customers.find(c => c.id === seat.customerId);
                 let className = 'seat-empty';
                 let statusText = '空席';
-                let onClickAction = ''; // 💡 修正: div全体に適用するonclickハンドラ
-                
+                                
                 if (seat.isOccupied && customer) {
                     if (customer.status === 'WaitConfirmation') {
                         className = 'seat-occupied-confirmation';
                         statusText = `注文待ち（手動）<br>P:${customer.patience.toFixed(1)}<br>タップして注文確認`;
                         // 💡 修正: div全体をタップ可能にする
-                        onClickAction = `onclick="handleSeatTap(game.customers.find(c => c.id === '${customer.id}'), 'OrderAsk')" style="cursor: pointer;"`;
-                    } else if (customer.status === 'WaitPayment') {
+                                            } else if (customer.status === 'WaitPayment') {
                         className = 'seat-occupied-payment';
                         statusText = `会計待ち<br>P:${customer.patience.toFixed(1)}<br>タップして会計開始`;
                         // 💡 修正: div全体をタップ可能にする
-                        onClickAction = `onclick="handleSeatTap(game.customers.find(c => c.id === '${customer.id}'), 'PaymentAsk')" style="cursor: pointer;"`;
-                    } else if (customer.status === 'WaitOrder' || customer.status === 'WaitCook' || customer.status === 'WaitServe') {
+                                            } else if (customer.status === 'WaitOrder' || customer.status === 'WaitCook' || customer.status === 'WaitServe') {
                         className = 'seat-occupied-wait';
                         statusText = `${customer.status === 'WaitOrder' ? '着席' : customer.status === 'WaitCook' ? '調理待ち' : '提供待ち'}<br>P:${customer.patience.toFixed(1)}`;
                     } else if (customer.status === 'Eating') {
@@ -1190,7 +1173,7 @@
                 }
                 
                 return `
-                    <div class="${className}" data-seat-id="${seat.id}" ${onClickAction}>
+                    <div class="${className} seat-tap" data-seat-id="${seat.id}">
                         席 ${seat.id} (${seat.isOccupied ? seat.numGuests : 0}人)
                         <br>
                         ${statusText}
@@ -1588,32 +1571,6 @@
     // 4. 会話テロップとレジ操作ロジック
     // =========================================================
 
-    // --- タッチ操作の改善 ---
-    let lastTapTime = 0;
-    let tapTimeout;
-
-    function handleSeatTap(customer, type) {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTapTime;
-        
-        // ダブルタップ防止（300ms以内の連続タップを無視）
-        if (tapLength < 300 && tapLength > 0) {
-            return;
-        }
-        
-        lastTapTime = currentTime;
-        
-        // タップフィードバック
-        const seatElement = event.currentTarget;
-        seatElement.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-            seatElement.style.transform = 'scale(1)';
-        }, 150);
-        
-        // 実際の処理を実行
-        showDialogue(customer, type);
-    }
-
     // --- 会話テロップ表示 ---
     function showDialogue(customer, type) {
         game.isPaused = true; 
@@ -1652,21 +1609,22 @@
             const closeBtn = document.createElement('button');
             closeBtn.textContent = 'OK (取引完了)';
             
+            // 【修正点 1】: 会計完了後の処理をインラインで記述し、確実に客を削除してゲームを再開する
             closeBtn.onclick = () => {
                 const finishedCustomer = game.customers.find(c => c.id === currentTransaction.customerId);
                 
                 if (finishedCustomer) {
-                    // 客の削除と資産更新を完了させ、席を解放する
+                    // 1. 客の削除と資産更新を完了させ、席を解放する (removeCustomer内でupdateDisplayも呼ばれている)
                     game.removeCustomer(finishedCustomer, finishedCustomer.seatId, true); 
                 }
                 
-                // ダイアログを閉じる
+                // 2. ダイアログを閉じる
                 dialogueBox.style.display = 'none';
 
-                // ゲーム再開
+                // 3. ゲーム再開
                 game.isPaused = false; 
                 
-                // トランザクションをリセット
+                // 4. トランザクションをリセット
                 currentTransaction.customerId = null;
                 currentTransaction.changeGiven = 0;
                 currentTransaction.receivedAmount = 0;
@@ -1701,7 +1659,7 @@
         currentTransaction.changeGiven = 0;
         currentTransaction.changeDispensed = {};
         
-        // 客が渡す金額を決定し、お釣りが発生するようにする
+        // 【修正点】客が渡す金額を決定し、お釣りが発生するようにする
         const bill = customer.billAmount;
         const availableBills = [10000, 5000, 1000];
         let received = bill;
@@ -1800,7 +1758,7 @@
                  return;
             }
             
-            // 客のステータスをPayingに変更し、会話終了まで席を解放しないようにする
+            // 【修正】客のステータスをPayingに変更し、会話終了まで席を解放しないようにする
             customer.status = 'Paying'; 
             
             // 会計後の客の会話を表示し、レジモーダルを閉じる
@@ -2163,7 +2121,28 @@
             checkSavedGame();
         }
     };
-</script>
 
-</body>
-</html>
+
+// --- 追加: single-finger タップで席を確実に拾う処理 ---
+function handleSeatTap(seatId) {
+    if (!seatId) return;
+    // seatIdは文字列の可能性があるので数値比較でもokに
+    const customer = game.customers.find(c => String(c.seatId) === String(seatId));
+    if (!customer) return;
+
+    if (customer.status === 'WaitConfirmation') {
+        showDialogue(customer, 'OrderAsk');
+    } else if (customer.status === 'WaitPayment') {
+        showDialogue(customer, 'PaymentAsk');
+    }
+}
+
+// スマホ用（最優先で反応）
+document.addEventListener('touchstart', function(e){
+    const seat = e.target.closest && e.target.closest('.seat-tap');
+    if (!seat) return;
+    handleSeatTap(seat.dataset.seatId);
+}, {passive:true});
+
+// PC用クリック
+document.addEventListener('click', functi
