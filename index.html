@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4.7 - シングルタップ修正)</title>
+    <title>飲食店経営シミュレーション (ver1.4.8 - ロック遅延短縮)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -1112,13 +1112,11 @@
                         className = 'seat-occupied-confirmation';
                         statusText = `注文待ち（手動）<br>P:${customer.patience.toFixed(1)}`;
                         // 注文確認ボタン（会話モーダルを介して）
-                        // 【重要】ボタン押下時に isInputLocked をチェックしないのは、showDialogue内でチェックしているため（今回の修正でチェックを削除）
                         buttonHTML = `<button onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'OrderAsk')" class="action-btn" style="background-color: #1E90FF; padding: 5px; font-size: 0.8em; margin-top: 5px;">注文を取る</button>`;
                     } else if (customer.status === 'WaitPayment') {
                         className = 'seat-occupied-payment';
                         statusText = `会計待ち<br>P:${customer.patience.toFixed(1)}`;
                         // 会計開始ボタン（会話モーダルを介して）
-                        // 【重要】ボタン押下時に isInputLocked をチェックしないのは、showDialogue内でチェックしているため（今回の修正でチェックを削除）
                         buttonHTML = `<button onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'PaymentAsk')" class="action-btn" style="background-color: #008000; padding: 5px; font-size: 0.8em; margin-top: 5px;">会計する</button>`;
                     } else if (customer.status === 'WaitOrder' || customer.status === 'WaitCook' || customer.status === 'WaitServe') {
                         className = 'seat-occupied-wait';
@@ -1535,10 +1533,7 @@
 
     // --- 会話テロップ表示 ---
     function showDialogue(customer, type) {
-        // 【修正点】入力ロックチェックを削除し、最初のクリックが通るようにする
-        // if (isInputLocked) { console.log("Input locked, cancelling showDialogue."); return; }
-
-        // 【修正】会話中は必ず一時停止
+        // 【修正点】入力ロックチェックを削除
         game.isPaused = true; 
 
         const dialogueBox = document.getElementById('customer-dialogue-box');
@@ -1587,22 +1582,25 @@
         dialogueBox.style.display = 'block';
     }
 
+    // --- ダイアログを閉じる ---
     function closeDialogue(keepPaused = false) {
-        document.getElementById('customer-dialogue-box').style.display = 'none';
-        if (!keepPaused) {
-            // 【強化修正】ゲーム再開時の入力ロック処理
-            isInputLocked = true; // 新しい入力ロック
-            console.log("closeDialogue: 入力ロック (isInputLocked = true)");
+        const dialog = document.getElementById('customer-dialogue-box');
+        dialog.style.display = 'none';
 
-            // 遅延を150msに強化し、ゲーム再開をロック解除よりも後に行う
+        if (!keepPaused) {
+            // 一時的にロックして処理中の重複クリックを防止
+            isInputLocked = true;
+            console.log("closeDialogue: 入力ロック開始");
+
+            // UI更新 → ゲーム再開 → ロック解除 の順番
             setTimeout(() => {
-                game.updateDisplay(); // UIを即座に更新
+                game.updateDisplay();  // UIを先に更新
                 game.isPaused = false; // ゲーム再開
                 isInputLocked = false; // ロック解除
-                console.log("closeDialogue: UI更新 -> ゲーム再開 -> ロック解除 (isPaused = false, isInputLocked = false)");
-            }, 150); // 遅延を150msに強化
+                console.log("closeDialogue: UI更新 → ゲーム再開 → ロック解除完了");
+            }, 50); // 遅延は50msで十分
         } else {
-             console.log("closeDialogue: 一時停止継続 (keepPaused = true)");
+            console.log("closeDialogue: 一時停止継続 (keepPaused = true)");
         }
     }
 
@@ -1728,7 +1726,6 @@
             showDialogue(customer, 'PaymentComplete'); 
             
             // removeCustomerはPaymentCompleteのOKボタンで実行されるため、ここではteropのみ
-            // terop(`席 ${customer.seatId} の会計成功！ お釣り: ${changeDue.toLocaleString()}円、利益: +${profit.toLocaleString()}円`);
 
         } else {
             // お釣りが間違っている
@@ -1737,10 +1734,11 @@
         }
     }
     
-    // 【強化修正】モーダルを閉じる際に、一時停止を解除するロジックを整理
+    // --- モーダルを閉じる ---
     function closeModal(modalId, keepPaused = false) {
-        document.getElementById(modalId).style.display = 'none';
-        
+        const modal = document.getElementById(modalId);
+        modal.style.display = 'none';
+
         if (modalId === 'register-modal') {
             // レジ取引を中止した場合（giveChange以外から呼ばれた場合）
             const customer = game.customers.find(c => c.id === currentTransaction.customerId);
@@ -1755,17 +1753,17 @@
         }
 
         if (!keepPaused) {
-            // 【強化修正】ゲーム再開時の入力ロック処理
-            isInputLocked = true; // 新しい入力ロック
-            console.log("closeModal: 入力ロック (isInputLocked = true)");
-            
-            // 遅延を150msに強化し、ゲーム再開をロック解除よりも後に行う
+            // 一時的にロック
+            isInputLocked = true;
+            console.log("closeModal: 入力ロック開始");
+
+            // UI更新 → ゲーム再開 → ロック解除
             setTimeout(() => {
-                game.updateDisplay(); // UIを即座に更新
+                game.updateDisplay();  // UI更新
                 game.isPaused = false; // ゲーム再開
                 isInputLocked = false; // ロック解除
-                console.log("closeModal: UI更新 -> ゲーム再開 -> ロック解除 (isPaused = false, isInputLocked = false)");
-            }, 150); // 遅延を150msに強化
+                console.log("closeModal: UI更新 → ゲーム再開 → ロック解除完了");
+            }, 50);
         } else {
             console.log("closeModal: 一時停止継続 (keepPaused = true)");
         }
@@ -1778,7 +1776,6 @@
 
     function showSettings() {
         // 【修正点】入力ロックチェックを削除
-        // if (isInputLocked) return; 
         game.isPaused = true;
         updateEmployeeSettings();
         document.getElementById('settings-modal').style.display = 'block';
@@ -1895,7 +1892,6 @@
 
     function showItems() {
         // 【修正点】入力ロックチェックを削除
-        // if (isInputLocked) return; 
         game.isPaused = true;
         updateItemPurchaseUI();
         document.getElementById('item-modal').style.display = 'block';
@@ -1944,7 +1940,6 @@
 
     function showMenu() {
         // 【修正点】入力ロックチェックを削除
-        // if (isInputLocked) return; 
         game.isPaused = true;
         updateMenuSettings();
         document.getElementById('menu-modal').style.display = 'block';
@@ -2087,7 +2082,7 @@
     let gameLoopRef = null;
     let currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] };
     let isInfiniteAsset = false; // 無制限チートは別で管理
-    let isInputLocked = false; // 【修正点1】新しい入力ロックフラグの追加
+    let isInputLocked = false; // 新しい入力ロックフラグの追加
 
     window.onload = () => {
         // URLパラメータにチートフラグがある場合は、強制的に設定画面に飛ばす
