@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4.2 - バグ修正)</title>
+    <title>飲食店経営シミュレーション (ver1.4.3 - ロックアップ対策強化)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -659,10 +659,10 @@
     const SAVE_KEY = 'restaurant_tycoon_save';
     const GLOBAL_MAX_SEATS = 20;
 
-    // 【追加】客の画像リンク (一つのリンクを使用)
+    // 客の画像リンク (一つのリンクを使用)
     const CUSTOMER_IMAGE_URL = "https://i.ibb.co/2YPFhJ1D/IMG-2529.jpg";
 
-    // 【追加】レジ関連のグローバル変数
+    // レジ関連のグローバル変数
     let currentTransaction = {
         customerId: null,
         billAmount: 0,
@@ -691,7 +691,7 @@
             this.id = id;
             
             switch (grade) {
-                case 'マスター': // 【追加】マスター
+                case 'マスター': // 追加
                     this.speedMultiplier = 2.5;
                     this.missRate = 0.0;
                     this.dailyCost = 450000;
@@ -802,7 +802,7 @@
             
             this.hasGarbageCan = false;
 
-            // 【修正】手動/自動モード切り替えのデフォルト
+            // 手動/自動モード切り替えのデフォルト
             this.isManualMode = true; 
         }
         
@@ -1502,7 +1502,7 @@
         }
     }
 
-    // 【追加】自動/手動切り替え機能
+    // 自動/手動切り替え機能
     function toggleManualMode() {
         game.isManualMode = !game.isManualMode;
         
@@ -1589,10 +1589,14 @@
     function closeDialogue(keepPaused = false) {
         document.getElementById('customer-dialogue-box').style.display = 'none';
         if (!keepPaused) {
-            // 【重要修正】会話終了時にゲームを再開。setTimeoutで確実に次のイベントループで実行させる
+            // 【強化修正】会話終了時にゲームを再開。setTimeoutで確実に次のイベントループで実行させ、UIを再描画
             setTimeout(() => {
                 game.isPaused = false;
+                game.updateDisplay(); // UIを即座に更新してボタンの非活性化を防ぐ
+                console.log("closeDialogue: ゲーム再開 (isPaused = false)");
             }, 0);
+        } else {
+             console.log("closeDialogue: 一時停止継続 (keepPaused = true)");
         }
     }
 
@@ -1699,7 +1703,7 @@
         }
     }
     
-    // 【修正】モーダルを閉じる際に、一時停止を解除するロジックを整理
+    // 【強化修正】モーダルを閉じる際に、一時停止を解除するロジックを整理
     function closeModal(modalId, keepPaused = false) {
         document.getElementById(modalId).style.display = 'none';
         
@@ -1715,10 +1719,14 @@
         }
 
         if (!keepPaused) {
-            // 【重要修正】設定、メニュー、アイテム、または取引中止のレジモーダルを閉じた場合は再開。setTimeoutで確実に次のイベントループで実行させる
+            // 【強化修正】設定、メニュー、アイテム、または取引中止のレジモーダルを閉じた場合は再開。setTimeoutで確実に次のイベントループで実行させ、UIを再描画
             setTimeout(() => {
                 game.isPaused = false;
+                game.updateDisplay(); // UIを即座に更新してボタンの非活性化を防ぐ
+                console.log("closeModal: ゲーム再開 (isPaused = false)");
             }, 0);
+        } else {
+            console.log("closeModal: 一時停止継続 (keepPaused = true)");
         }
     }
 
