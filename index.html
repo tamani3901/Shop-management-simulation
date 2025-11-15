@@ -244,145 +244,6 @@
             #main-game-area { padding: 12px; }
             .modal-content { width: 92%; padding: 12px; }
         }
-
-        /* --- 追加: 会話バブル --- */
-        .speech-bubble {
-            position: absolute;
-            background: white;
-            border-radius: 10px;
-            padding: 10px 15px;
-            max-width: 250px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1002;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        .speech-bubble:after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 20px;
-            border-width: 10px 10px 0;
-            border-style: solid;
-            border-color: white transparent;
-        }
-        .speech-bubble-options {
-            margin-top: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .speech-bubble-options button {
-            padding: 5px 10px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .speech-bubble-options button:hover {
-            background: #388E3C;
-        }
-
-        /* --- 追加: レジUI --- */
-        #register-ui {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #f5f5f5;
-            border: 2px solid #333;
-            border-radius: 10px;
-            padding: 15px;
-            width: 300px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            z-index: 1003;
-            display: none;
-        }
-        .register-display {
-            background: #333;
-            color: #0f0;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            margin-bottom: 10px;
-            text-align: right;
-            font-size: 18px;
-        }
-        .money-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        .money-btn {
-            padding: 8px;
-            background: #ddd;
-            border: 1px solid #999;
-            border-radius: 4px;
-            cursor: pointer;
-            text-align: center;
-        }
-        .money-btn:hover {
-            background: #ccc;
-        }
-        .register-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-        .register-actions button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #register-cancel {
-            background: #f44336;
-            color: white;
-        }
-        #register-calculate {
-            background: #2196F3;
-            color: white;
-        }
-        #register-complete {
-            background: #4CAF50;
-            color: white;
-        }
-        .money-area {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-        .money-slot {
-            width: 48%;
-            min-height: 100px;
-            border: 2px dashed #999;
-            border-radius: 5px;
-            padding: 5px;
-        }
-        .money-item {
-            display: inline-block;
-            padding: 5px 10px;
-            margin: 2px;
-            background: #FFD700;
-            border-radius: 3px;
-            cursor: move;
-        }
-
-        /* --- 追加: 客画像 --- */
-        .customer-image {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 10px;
-        }
-        .customer-with-image {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
     </style>
 </head>
 <body>
@@ -468,7 +329,6 @@
                     <button onclick="saveGame()" class="action-btn" style="background-color: #007bff;">セーブ</button>
                     <button onclick="quitGame()" class="action-btn" style="background-color: #f44336;">やめる</button>
                     <button onclick="toggleMobileMode()" class="action-btn" id="mobile-toggle-btn" style="background-color: #009688;">スマホモード</button>
-                    <button onclick="toggleManualMode()" class="action-btn" id="manual-mode-btn" style="background-color: #9C27B0;">自動モード</button>
                 </div>
                 <div id="day-time-display">
                     <span id="day-display">Day 1</span> | <span id="time-display">00:00</span>
@@ -501,35 +361,6 @@
     </div>
 </div>
 
-<!-- 追加: レジUI -->
-<div id="register-ui">
-    <div class="register-display" id="register-display">0円</div>
-    <div class="money-buttons">
-        <div class="money-btn" data-value="1">1円</div>
-        <div class="money-btn" data-value="5">5円</div>
-        <div class="money-btn" data-value="10">10円</div>
-        <div class="money-btn" data-value="50">50円</div>
-        <div class="money-btn" data-value="100">100円</div>
-        <div class="money-btn" data-value="500">500円</div>
-        <div class="money-btn" data-value="1000">1000円</div>
-        <div class="money-btn" data-value="5000">5000円</div>
-        <div class="money-btn" data-value="10000">10000円</div>
-    </div>
-    <div class="money-area">
-        <div class="money-slot" id="customer-money">
-            <p>客のお金</p>
-        </div>
-        <div class="money-slot" id="change-money">
-            <p>お釣り</p>
-        </div>
-    </div>
-    <div class="register-actions">
-        <button id="register-cancel">キャンセル</button>
-        <button id="register-calculate">計算</button>
-        <button id="register-complete">完了</button>
-    </div>
-</div>
-
 <div id="log-terop"></div>
 
 <div id="settings-modal" class="modal">
@@ -542,7 +373,6 @@
                 </div>
             <p><strong>採用:</strong> (日当)</p>
             <div class="button-list">
-                <button onclick="addEmployee('マスター')">マスター (45万)</button>
                 <button onclick="addEmployee('ベテラン')">ベテラン (30万)</button>
                 <button onclick="addEmployee('標準')">標準 (20万)</button>
                 <button onclick="addEmployee('ポンコツ')">ポンコツ (10万)</button>
@@ -691,19 +521,16 @@
             this.id = id;
             
             switch (grade) {
-                case 'マスター':
-                    this.speedMultiplier = 2.5;
-                    this.missRate = 0.0;
-                    this.dailyCost = 450000; 
-                    break;
                 case 'ベテラン':
                     this.speedMultiplier = 1.5;
                     this.missRate = 0.0;
+                    // 【修正】日給を30万に
                     this.dailyCost = 300000; 
                     break;
                 case '標準':
                     this.speedMultiplier = 1.0;
                     this.missRate = 0.03;
+                    // 【修正】日給を20万に
                     this.dailyCost = 200000; 
                     break;
                 case 'ポンコツ':
@@ -728,7 +555,6 @@
             this.status = 'WaitOrder'; // WaitOrder, WaitCook, WaitServe, Eating, Paying, Done
             this.patience = 60;        
             this.mealTimeLeft = 30;    
-            this.imageIndex = Math.floor(Math.random() * 5) + 1; // ランダムな客画像を選択
 
             // 注文ロジック
             if (menuList && menuList.length > 0) {
@@ -761,62 +587,6 @@
                 this.status = 'Done'; 
             }
         }
-        
-        // 会話バブルを表示する
-        showSpeechBubble(message, options = null) {
-            const seatElement = document.querySelector(`#seat-map div[data-seat-id="${this.seatId}"]`);
-            if (!seatElement) return;
-            
-            // 既存のバブルを削除
-            const existingBubble = document.querySelector(`.speech-bubble[data-customer="${this.id}"]`);
-            if (existingBubble) existingBubble.remove();
-            
-            const bubble = document.createElement('div');
-            bubble.className = 'speech-bubble';
-            bubble.dataset.customer = this.id;
-            bubble.innerHTML = `<div>${message}</div>`;
-            
-            if (options) {
-                const optionsDiv = document.createElement('div');
-                optionsDiv.className = 'speech-bubble-options';
-                options.forEach(option => {
-                    const button = document.createElement('button');
-                    button.textContent = option.text;
-                    button.onclick = () => {
-                        option.action();
-                        bubble.remove();
-                    };
-                    optionsDiv.appendChild(button);
-                });
-                bubble.appendChild(optionsDiv);
-            }
-            
-            document.body.appendChild(bubble);
-            
-            // バブルの位置を設定
-            const rect = seatElement.getBoundingClientRect();
-            bubble.style.left = `${rect.left + window.scrollX}px`;
-            bubble.style.top = `${rect.top + window.scrollY - bubble.offsetHeight - 10}px`;
-            
-            // オプションがない場合は一定時間で消える
-            if (!options) {
-                setTimeout(() => {
-                    if (bubble.parentNode) bubble.remove();
-                }, 3000);
-            }
-        }
-        
-        // 客画像を取得
-        getImageUrl() {
-            const imageUrls = [
-                "https://i.ibb.co/2YPFhJ1D/IMG-2529.jpg",
-                "https://i.ibb.co/p6DSzpHQ/IMG-2529.jpg",
-                "https://i.ibb.co/BHW5cMvS/IMG-2529.jpg",
-                "https://i.ibb.co/7tjqbkkX/IMG-2529.jpg",
-                "https://i.ibb.co/Xkkr114y/IMG-2529.jpg"
-            ];
-            return imageUrls[this.imageIndex - 1] || imageUrls[0];
-        }
     }
 
 
@@ -831,7 +601,6 @@
             this.time = 0;
             this.isPaused = false;
             this.isGameRunning = false; // ゲームが実行中か
-            this.isManualMode = false; // 手動モードかどうか
 
             this.storeType = null;
             this.location = null;
@@ -850,12 +619,6 @@
             
             // 【追加】アイテムの所有状況
             this.hasGarbageCan = false;
-            
-            // レジ関連
-            this.currentPaymentCustomer = null;
-            this.paymentAmount = 0;
-            this.customerMoney = 0;
-            this.changeAmount = 0;
         }
         
         // 【追加】ゲームの状態を初期値にリセットする関数
@@ -866,7 +629,6 @@
             this.time = 0;
             this.isPaused = false;
             this.isGameRunning = false; 
-            this.isManualMode = false;
 
             this.storeType = null;
             this.location = null;
@@ -883,12 +645,6 @@
             this.customerSpawnInterval = 10; 
             
             this.hasGarbageCan = false;
-            
-            // レジ関連
-            this.currentPaymentCustomer = null;
-            this.paymentAmount = 0;
-            this.customerMoney = 0;
-            this.changeAmount = 0;
         }
 
         initializeGame(settings) {
@@ -939,50 +695,7 @@
             this.customers.forEach(customer => {
                 customer.update(deltaTime);
                 
-                // 手動モードの場合の処理
-                if (this.isManualMode) {
-                    if (customer.status === 'WaitOrder' && customer.orderType === '手動') {
-                        // 注文待ちの客に会話バブルを表示
-                        if (!document.querySelector(`.speech-bubble[data-customer="${customer.id}"]`)) {
-                            customer.showSpeechBubble(
-                                `こんにちは！${customer.orderedItem.name}を${customer.numPeople}人分ください。`,
-                                [
-                                    {
-                                        text: '注文を受ける',
-                                        action: () => {
-                                            this.cookQueue.push({ customer: customer });
-                                            customer.status = 'WaitCook';
-                                            terop(`席${customer.seatId}の注文を受付ました: ${customer.orderedItem.name} x ${customer.numPeople}`);
-                                        }
-                                    },
-                                    {
-                                        text: 'キャンセル',
-                                        action: () => {
-                                            terop(`席${customer.seatId}の注文をキャンセルしました`);
-                                        }
-                                    }
-                                ]
-                            );
-                        }
-                    } else if (customer.status === 'Paying') {
-                        // 会計待ちの客に会話バブルを表示
-                        if (!document.querySelector(`.speech-bubble[data-customer="${customer.id}"]`)) {
-                            customer.showSpeechBubble(
-                                `お会計お願いします。${customer.billAmount.toLocaleString()}円です。`,
-                                [
-                                    {
-                                        text: '会計する',
-                                        action: () => {
-                                            this.startPayment(customer);
-                                        }
-                                    }
-                                ]
-                            );
-                        }
-                    }
-                }
-                
-                if (customer.status === 'Paying' && !this.isManualMode) {
+                if (customer.status === 'Paying') {
                     this.removeCustomer(customer, customer.seatId, true);
                 } else if (customer.status === 'Done') {
                     this.removeCustomer(customer, customer.seatId, false);
@@ -1008,10 +721,7 @@
                 }
 
                 const numPeople = Math.floor(Math.random() * 4) + 1;
-                // 手動モードの場合は手動注文の客を増やす
-                const orderType = this.isManualMode ? 
-                    (Math.random() < 0.5 ? 'タブレット' : '手動') : 
-                    (Math.random() < 0.7 ? 'タブレット' : '手動');
+                const orderType = Math.random() < 0.7 ? 'タブレット' : '手動';
 
                 const seatIndex = this.seatsData.findIndex(seat => !seat.isOccupied);
                 if (seatIndex !== -1) {
@@ -1078,16 +788,13 @@
                 }
 
                 if (!task) {
-                    // 手動モードでない場合のみ、注文受付を行う
-                    if (!this.isManualMode) {
-                        // 優先度1: 注文受付 (手動注文の客)
-                        const manualCustomer = this.customers.find(c => c.status === 'WaitOrder' && c.orderType === '手動');
-                        if (manualCustomer) {
-                            const baseTime = 5; 
-                            this.employeeTasks.push({ employee: employee, taskType: 'order_taking', target: manualCustomer, timeLeft: employee.getProcessTime(baseTime) });
-                            manualCustomer.status = 'WaitCook'; // 注文受付タスク中も一応待機状態のまま
-                            return;
-                        }
+                    // 優先度1: 注文受付 (手動注文の客)
+                    const manualCustomer = this.customers.find(c => c.status === 'WaitOrder' && c.orderType === '手動');
+                    if (manualCustomer) {
+                        const baseTime = 5; 
+                        this.employeeTasks.push({ employee: employee, taskType: 'order_taking', target: manualCustomer, timeLeft: employee.getProcessTime(baseTime) });
+                        manualCustomer.status = 'WaitCook'; // 注文受付タスク中も一応待機状態のまま
+                        return;
                     }
 
                     // 優先度2: 調理タスク
@@ -1112,119 +819,6 @@
                 customer.status = 'Eating';
                 terop(`調理完了！席${customer.seatId}の食事提供を開始しました。`);
             }
-        }
-
-        // --- 会計処理 ---
-        startPayment(customer) {
-            this.currentPaymentCustomer = customer;
-            this.paymentAmount = customer.billAmount;
-            this.customerMoney = 0;
-            this.changeAmount = 0;
-            
-            // レジUIを表示
-            document.getElementById('register-display').textContent = `${this.paymentAmount.toLocaleString()}円`;
-            document.getElementById('customer-money').innerHTML = '<p>客のお金</p>';
-            document.getElementById('change-money').innerHTML = '<p>お釣り</p>';
-            
-            document.getElementById('register-ui').style.display = 'block';
-            this.isPaused = true;
-            
-            // 会話バブルを削除
-            const bubble = document.querySelector(`.speech-bubble[data-customer="${customer.id}"]`);
-            if (bubble) bubble.remove();
-        }
-        
-        addMoney(amount) {
-            this.customerMoney += amount;
-            
-            // 客のお金エリアに追加
-            const moneySlot = document.getElementById('customer-money');
-            const moneyItem = document.createElement('div');
-            moneyItem.className = 'money-item';
-            moneyItem.textContent = `${amount.toLocaleString()}円`;
-            moneyItem.draggable = true;
-            moneyItem.dataset.value = amount;
-            moneySlot.appendChild(moneyItem);
-            
-            // ドラッグ＆ドロップイベントを追加
-            moneyItem.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('text/plain', amount);
-            });
-            
-            this.updateRegisterDisplay();
-        }
-        
-        updateRegisterDisplay() {
-            const display = document.getElementById('register-display');
-            display.textContent = `${this.paymentAmount.toLocaleString()}円 | 支払: ${this.customerMoney.toLocaleString()}円`;
-            
-            if (this.customerMoney >= this.paymentAmount) {
-                this.changeAmount = this.customerMoney - this.paymentAmount;
-                display.textContent += ` | お釣り: ${this.changeAmount.toLocaleString()}円`;
-                
-                // お釣りを計算して表示
-                this.calculateChange();
-            }
-        }
-        
-        calculateChange() {
-            const changeSlot = document.getElementById('change-money');
-            changeSlot.innerHTML = '<p>お釣り</p>';
-            
-            if (this.changeAmount <= 0) return;
-            
-            // 簡単なお釣り計算（実際にはもっと複雑なロジックが必要）
-            let remaining = this.changeAmount;
-            const denominations = [10000, 5000, 1000, 500, 100, 50, 10, 5, 1];
-            
-            denominations.forEach(denom => {
-                const count = Math.floor(remaining / denom);
-                if (count > 0) {
-                    for (let i = 0; i < count; i++) {
-                        const changeItem = document.createElement('div');
-                        changeItem.className = 'money-item';
-                        changeItem.textContent = `${denom.toLocaleString()}円`;
-                        changeItem.draggable = true;
-                        changeItem.dataset.value = denom;
-                        changeSlot.appendChild(changeItem);
-                        
-                        // ドラッグ＆ドロップイベントを追加
-                        changeItem.addEventListener('dragstart', (e) => {
-                            e.dataTransfer.setData('text/plain', denom);
-                        });
-                    }
-                    remaining -= denom * count;
-                }
-            });
-        }
-        
-        completePayment() {
-            if (this.customerMoney < this.paymentAmount) {
-                terop('お金が足りません！');
-                return;
-            }
-            
-            // お釣りを客に渡す（ドラッグ＆ドロップで実装）
-            const changeItems = document.getElementById('change-money').querySelectorAll('.money-item');
-            if (changeItems.length === 0 && this.changeAmount > 0) {
-                terop('お釣りを計算してください！');
-                return;
-            }
-            
-            // 会計完了
-            const profit = this.paymentAmount - this.currentPaymentCustomer.totalCost;
-            this.asset += profit;
-            
-            terop(`席 ${this.currentPaymentCustomer.seatId} の会計完了！ 利益: +${profit.toLocaleString()}円`);
-            
-            this.removeCustomer(this.currentPaymentCustomer, this.currentPaymentCustomer.seatId, true);
-            this.closeRegister();
-        }
-        
-        closeRegister() {
-            document.getElementById('register-ui').style.display = 'none';
-            this.currentPaymentCustomer = null;
-            this.isPaused = false;
         }
 
         // --- 席数をゲーム中に変更する（増やす/減らす） ---
@@ -1310,7 +904,7 @@
                     }
                 }
                 
-                return `<div class="${className}" data-seat-id="${seat.id}">席 ${seat.id}<br>${statusText}</div>`;
+                return `<div class="${className}">席 ${seat.id}<br>${statusText}</div>`;
             }).join('');
             
             // アイテム表示の更新
@@ -1340,28 +934,16 @@
             waitingCustomers.forEach(c => {
                 const statusText = c.status === 'WaitOrder' ? '注文待ち' : (c.status === 'WaitCook' ? '調理待ち' : '提供待ち');
                 const item = c.orderedItem ? c.orderedItem.name : '不明';
-                waitingDetails += `
-                    <div class="customer-with-image">
-                        <img src="${c.getImageUrl()}" alt="客" class="customer-image">
-                        <div>
-                            席${c.seatId} (${c.numPeople}人) - ${statusText} <br>
-                            品: ${item} x ${c.numPeople} (${c.billAmount.toLocaleString()}円)
-                        </div>
-                    </div>
-                `;
+                waitingDetails += `<p style="margin: 5px 0; font-size: 0.9em; border-bottom: 1px dotted #eee;">
+                    席${c.seatId} (${c.numPeople}人) - ${statusText} <br>
+                    品: ${item} x ${c.numPeople} (${c.billAmount.toLocaleString()}円)
+                </p>`;
             });
             document.getElementById('waiting-customer-details').innerHTML = waitingDetails || '<p>待ち客なし</p>';
 
             // settings modal 表示用席数更新
             const seatsDisplay = document.getElementById('in-game-seats-display');
             if (seatsDisplay) seatsDisplay.textContent = this.currentSeats;
-            
-            // 手動/自動モードボタンの表示更新
-            const manualModeBtn = document.getElementById('manual-mode-btn');
-            if (manualModeBtn) {
-                manualModeBtn.textContent = this.isManualMode ? '自動モード' : '手動モード';
-                manualModeBtn.style.backgroundColor = this.isManualMode ? '#9C27B0' : '#FF9800';
-            }
         }
 
         endOfDay() {
@@ -1413,17 +995,8 @@
                 hasGarbageCan: this.hasGarbageCan,
                 // 保存用に席数と席データを持たせる
                 currentSeats: this.currentSeats,
-                seatsData: this.seatsData,
-                // 手動/自動モードの状態を保存
-                isManualMode: this.isManualMode
+                seatsData: this.seatsData
             };
-        }
-        
-        // 手動/自動モードの切り替え
-        toggleManualMode() {
-            this.isManualMode = !this.isManualMode;
-            terop(this.isManualMode ? '手動モードに切り替えました' : '自動モードに切り替えました');
-            this.updateDisplay();
         }
     }
 
@@ -1923,9 +1496,6 @@
             game.seatsData = gameData.seatsData;
             game.currentSeats = gameData.currentSeats || (game.seatsData.length * 2);
         }
-        
-        // 手動/自動モードの状態を復元
-        game.isManualMode = gameData.isManualMode || false;
 
         showScreen('game-screen');
         showWarningOnExit();
@@ -2021,11 +1591,6 @@
         btn.textContent = isMobile ? 'PCモード' : 'スマホモード';
         terop(isMobile ? 'スマホモードに切り替えました' : 'PCモードに戻しました');
     }
-    
-    // --- 手動/自動モード切替 ---
-    function toggleManualMode() {
-        game.toggleManualMode();
-    }
 
     // --- ユーティリティ関数 ---
     // 【追加】URLパラメータ取得関数
@@ -2051,37 +1616,6 @@
             showScreen('home-screen');
         }
         checkSavedGame();
-        
-        // レジのイベントリスナーを設定
-        document.querySelectorAll('.money-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const value = parseInt(btn.dataset.value);
-                game.addMoney(value);
-            });
-        });
-        
-        document.getElementById('register-cancel').addEventListener('click', () => {
-            game.closeRegister();
-        });
-        
-        document.getElementById('register-calculate').addEventListener('click', () => {
-            game.calculateChange();
-        });
-        
-        document.getElementById('register-complete').addEventListener('click', () => {
-            game.completePayment();
-        });
-        
-        // ドラッグ＆ドロップの設定
-        document.getElementById('customer-money').addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-        
-        document.getElementById('customer-money').addEventListener('drop', (e) => {
-            e.preventDefault();
-            const value = parseInt(e.dataTransfer.getData('text/plain'));
-            game.addMoney(value);
-        });
     };
 
 </script>
