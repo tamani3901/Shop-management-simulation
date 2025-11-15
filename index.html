@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4.8 - ロック遅延短縮)</title>
+    <title>飲食店経営シミュレーション (ver1.4.9 - タップ領域改善)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -63,23 +63,39 @@
             border: 1px solid #ddd;
             border-radius: 8px;
         }
+        
+        /* --- 修正: ボタンのタップ領域と配置を改善 --- */
+        .button-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center; /* ボタンを中央に寄せる */
+        }
 
         .button-list button, .action-btn, .button-list a {
             background-color: #2196F3;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 20px; /* タップ領域を広げる */
             margin: 5px;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
             text-decoration: none;
-            /* リンクのスタイル調整 */
             display: inline-block;
+            box-sizing: border-box; 
+            touch-action: manipulation; /* タッチの遅延回避 (iOS/Android) */
+        }
+        
+        /* 💡 修正: 子要素に pointer-events: none; を適用して親にクリックを通す */
+        .button-list button > *, .action-btn > * {
+            pointer-events: none;
         }
 
         .button-list button:hover, .action-btn:hover, .button-list a:hover {
             background-color: #0b7dda;
+        }
+        .button-list button:active, .action-btn:active, .button-list a:active {
+            transform: scale(0.98);
         }
 
         /* ゲーム実行画面のUI */
@@ -112,17 +128,23 @@
             flex-wrap: wrap; /* ボタンが多いので折り返す */
         }
 
-        /* ヘッダーのボタン群を折りたたみやすくする */
+        /* ヘッダーのボタン群を折りたたみやすくする (paddingを小さく保つ) */
         #header-bar .left-buttons {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
         }
+        #header-bar .left-buttons button {
+             padding: 8px 12px;
+             margin: 3px;
+        }
 
         /* スマホモードの大きめボタン */
         body.mobile-mode .button-list button, body.mobile-mode .action-btn {
-            padding: 12px 14px;
+            padding: 14px 16px; /* さらに領域を拡大 */
             font-size: 16px;
+            margin: 6px 3px;
+            width: calc(50% - 6px); /* 2列で配置しやすく */
         }
 
         #main-game-area {
@@ -172,7 +194,7 @@
             z-index: 1000;
         }
         
-        /* === 席マップと客の状態 === */
+        /* === 席マップと客の状態 --- 修正: 席全体をタップ領域に === */
         #seat-map {
             display: flex;
             flex-wrap: wrap;
@@ -188,6 +210,17 @@
             font-size: 0.9em;
             min-width: 100px;
             text-align: center;
+            user-select: none; /* テキスト選択防止 */
+            touch-action: manipulation; /* タップの遅延回避 */
+        }
+        /* クリック可能な席（onclick属性を持つdiv）のフィードバック */
+        #seat-map div[onclick] {
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        #seat-map div[onclick]:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
 
         /* モバイルではグリッドにして見やすく */
@@ -291,6 +324,13 @@
             font-weight: bold;
             color: #4CAF50;
         }
+        /* 💡 修正: 会話オプションボタンもタップ領域を広げる */
+        #dialogue-options button {
+             padding: 12px 20px; 
+             margin: 5px;
+             touch-action: manipulation;
+        }
+
         /* --- レジUI (Register Modal) --- */
         .cash-register {
             background-color: #333;
@@ -336,6 +376,8 @@
             margin: 3px;
             font-weight: bold;
             padding: 5px;
+            /* 💡 修正: コインボタンもタップ領域を広げる */
+            touch-action: manipulation; 
         }
         .payment-input input {
             width: 100%;
@@ -1105,19 +1147,19 @@
                 const customer = this.customers.find(c => c.id === seat.customerId);
                 let className = 'seat-empty';
                 let statusText = '空席';
-                let buttonHTML = '';
-
+                let onClickAction = ''; // 💡 修正: div全体に適用するonclickハンドラ
+                
                 if (seat.isOccupied && customer) {
                     if (customer.status === 'WaitConfirmation') {
                         className = 'seat-occupied-confirmation';
-                        statusText = `注文待ち（手動）<br>P:${customer.patience.toFixed(1)}`;
-                        // 注文確認ボタン（会話モーダルを介して）
-                        buttonHTML = `<button onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'OrderAsk')" class="action-btn" style="background-color: #1E90FF; padding: 5px; font-size: 0.8em; margin-top: 5px;">注文を取る</button>`;
+                        statusText = `注文待ち（手動）<br>P:${customer.patience.toFixed(1)}<br>タップして注文確認`;
+                        // 💡 修正: div全体をタップ可能にする
+                        onClickAction = `onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'OrderAsk')" style="cursor: pointer;"`;
                     } else if (customer.status === 'WaitPayment') {
                         className = 'seat-occupied-payment';
-                        statusText = `会計待ち<br>P:${customer.patience.toFixed(1)}`;
-                        // 会計開始ボタン（会話モーダルを介して）
-                        buttonHTML = `<button onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'PaymentAsk')" class="action-btn" style="background-color: #008000; padding: 5px; font-size: 0.8em; margin-top: 5px;">会計する</button>`;
+                        statusText = `会計待ち<br>P:${customer.patience.toFixed(1)}<br>タップして会計開始`;
+                        // 💡 修正: div全体をタップ可能にする
+                        onClickAction = `onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'PaymentAsk')" style="cursor: pointer;"`;
                     } else if (customer.status === 'WaitOrder' || customer.status === 'WaitCook' || customer.status === 'WaitServe') {
                         className = 'seat-occupied-wait';
                         statusText = `${customer.status === 'WaitOrder' ? '着席' : customer.status === 'WaitCook' ? '調理待ち' : '提供待ち'}<br>P:${customer.patience.toFixed(1)}`;
@@ -1132,11 +1174,10 @@
                 }
                 
                 return `
-                    <div class="${className}" data-seat-id="${seat.id}">
+                    <div class="${className}" data-seat-id="${seat.id}" ${onClickAction}>
                         席 ${seat.id} (${seat.isOccupied ? seat.numGuests : 0}人)
                         <br>
                         ${statusText}
-                        ${buttonHTML}
                     </div>
                 `;
             }).join('');
