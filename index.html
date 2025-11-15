@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4.4 - ロックアップ・会計修正)</title>
+    <title>飲食店経営シミュレーション (ver1.4.5 - ロックアップ・レスポンス修正)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -251,7 +251,7 @@
             position: fixed;
             top: 20%; 
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-55%, -50%); /* 修正 */
             width: 80%;
             max-width: 400px;
             background: white;
@@ -1533,6 +1533,12 @@
 
     // --- 会話テロップ表示 ---
     function showDialogue(customer, type) {
+        // 【修正点1】入力ロック中なら処理を中断
+        if (isInputLocked) {
+            console.log("Input locked, cancelling showDialogue.");
+            return; 
+        }
+
         // 【修正】会話中は必ず一時停止
         game.isPaused = true; 
 
@@ -1585,12 +1591,17 @@
     function closeDialogue(keepPaused = false) {
         document.getElementById('customer-dialogue-box').style.display = 'none';
         if (!keepPaused) {
-            // 【強化修正】会話終了時にゲームを再開。50msの遅延を設けて連打による状態の衝突を防ぐ
+            // 【強化修正】ゲーム再開時の入力ロック処理
+            isInputLocked = true; // 新しい入力ロック
+            console.log("closeDialogue: 入力ロック (isInputLocked = true)");
+
+            // 100msの遅延を設けて、ゲーム再開とロック解除を行う
             setTimeout(() => {
                 game.isPaused = false;
                 game.updateDisplay(); 
-                console.log("closeDialogue: ゲーム再開 (isPaused = false)");
-            }, 50); // 50msの遅延
+                isInputLocked = false; // ロック解除
+                console.log("closeDialogue: ゲーム再開 & ロック解除 (isPaused = false, isInputLocked = false)");
+            }, 100); // 遅延を100msに強化
         } else {
              console.log("closeDialogue: 一時停止継続 (keepPaused = true)");
         }
@@ -1745,12 +1756,17 @@
         }
 
         if (!keepPaused) {
-            // 【強化修正】設定、メニュー、アイテム、または取引中止のレジモーダルを閉じた場合は再開。50msの遅延を設けて連打による状態の衝突を防ぐ
+            // 【強化修正】ゲーム再開時の入力ロック処理
+            isInputLocked = true; // 新しい入力ロック
+            console.log("closeModal: 入力ロック (isInputLocked = true)");
+            
+            // 100msの遅延を設けて、ゲーム再開とロック解除を行う
             setTimeout(() => {
                 game.isPaused = false;
                 game.updateDisplay(); // UIを即座に更新してボタンの非活性化を防ぐ
-                console.log("closeModal: ゲーム再開 (isPaused = false)");
-            }, 50); // 50msの遅延
+                isInputLocked = false; // ロック解除
+                console.log("closeModal: ゲーム再開 & ロック解除 (isPaused = false, isInputLocked = false)");
+            }, 100); // 遅延を100msに強化
         } else {
             console.log("closeModal: 一時停止継続 (keepPaused = true)");
         }
@@ -1762,6 +1778,7 @@
     // =========================================================
 
     function showSettings() {
+        if (isInputLocked) return; // 【修正点1】入力ロック中なら中断
         game.isPaused = true;
         updateEmployeeSettings();
         document.getElementById('settings-modal').style.display = 'block';
@@ -1877,6 +1894,7 @@
 
 
     function showItems() {
+        if (isInputLocked) return; // 【修正点1】入力ロック中なら中断
         game.isPaused = true;
         updateItemPurchaseUI();
         document.getElementById('item-modal').style.display = 'block';
@@ -1924,6 +1942,7 @@
 
 
     function showMenu() {
+        if (isInputLocked) return; // 【修正点1】入力ロック中なら中断
         game.isPaused = true;
         updateMenuSettings();
         document.getElementById('menu-modal').style.display = 'block';
@@ -2066,6 +2085,7 @@
     let gameLoopRef = null;
     let currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] };
     let isInfiniteAsset = false; // 無制限チートは別で管理
+    let isInputLocked = false; // 【修正点1】新しい入力ロックフラグの追加
 
     window.onload = () => {
         // URLパラメータにチートフラグがある場合は、強制的に設定画面に飛ばす
