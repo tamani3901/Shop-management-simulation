@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4.9 - タップ領域改善)</title>
+    <title>飲食店経営シミュレーション (ver1.4.10 - タップ/会計フィックス)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -1006,6 +1006,8 @@
                 this.reputation = Math.max(1, this.reputation - 0.1);
                 terop(`席 ${seatId} のお客様が怒って帰りました...評判低下 & 損失: ${customer.totalCost.toLocaleString()}円`);
             }
+            
+            this.updateDisplay(); // 席の解放を即座に反映
         }
 
         // --- プレイヤーの注文確認アクション ---
@@ -1574,7 +1576,6 @@
 
     // --- 会話テロップ表示 ---
     function showDialogue(customer, type) {
-        // 【修正点】入力ロックチェックを削除
         game.isPaused = true; 
 
         const dialogueBox = document.getElementById('customer-dialogue-box');
@@ -1612,7 +1613,7 @@
             closeBtn.onclick = () => {
                 const finishedCustomer = game.customers.find(c => c.id === currentTransaction.customerId);
                 if (finishedCustomer) {
-                    // 【修正点】ここで直接客を解放し、支払済みのフラグ(true)を渡す
+                    // 💡 修正: ここで直接客を解放し、支払済みのフラグ(true)を渡す
                     game.removeCustomer(finishedCustomer, finishedCustomer.seatId, true); 
                 }
                 closeDialogue(); 
@@ -1629,19 +1630,8 @@
         dialog.style.display = 'none';
 
         if (!keepPaused) {
-            // 一時的にロックして処理中の重複クリックを防止
-            isInputLocked = true;
-            console.log("closeDialogue: 入力ロック開始");
-
-            // UI更新 → ゲーム再開 → ロック解除 の順番
-            setTimeout(() => {
-                game.updateDisplay();  // UIを先に更新
-                game.isPaused = false; // ゲーム再開
-                isInputLocked = false; // ロック解除
-                console.log("closeDialogue: UI更新 → ゲーム再開 → ロック解除完了");
-            }, 50); // 遅延は50msで十分
-        } else {
-            console.log("closeDialogue: 一時停止継続 (keepPaused = true)");
+            game.updateDisplay();  // UIを更新
+            game.isPaused = false; // ゲーム再開
         }
     }
 
@@ -1756,9 +1746,6 @@
                  return;
             }
             
-            // 請求額と原価を元に利益を計算し、資産を更新
-            // 利益の計算と資産の更新はremoveCustomer内で行われる
-            
             // 【修正】客のステータスをPayingに変更し、会話終了まで席を解放しないようにする
             customer.status = 'Paying'; 
             
@@ -1766,8 +1753,6 @@
             closeModal('register-modal', true); // レジを閉じるが、一時停止は継続
             showDialogue(customer, 'PaymentComplete'); 
             
-            // removeCustomerはPaymentCompleteのOKボタンで実行されるため、ここではteropのみ
-
         } else {
             // お釣りが間違っている
             document.getElementById('register-message').textContent = `お釣りが**${changeDue.toLocaleString()}円**に対し、**${currentTransaction.changeGiven.toLocaleString()}円**渡しています。お釣りの金額が合いません！`;
@@ -1794,19 +1779,8 @@
         }
 
         if (!keepPaused) {
-            // 一時的にロック
-            isInputLocked = true;
-            console.log("closeModal: 入力ロック開始");
-
-            // UI更新 → ゲーム再開 → ロック解除
-            setTimeout(() => {
-                game.updateDisplay();  // UI更新
-                game.isPaused = false; // ゲーム再開
-                isInputLocked = false; // ロック解除
-                console.log("closeModal: UI更新 → ゲーム再開 → ロック解除完了");
-            }, 50);
-        } else {
-            console.log("closeModal: 一時停止継続 (keepPaused = true)");
+            game.updateDisplay();  // UI更新
+            game.isPaused = false; // ゲーム再開
         }
     }
 
@@ -1816,7 +1790,6 @@
     // =========================================================
 
     function showSettings() {
-        // 【修正点】入力ロックチェックを削除
         game.isPaused = true;
         updateEmployeeSettings();
         document.getElementById('settings-modal').style.display = 'block';
@@ -1836,11 +1809,13 @@
     }
 
     function addEmployee(grade) {
-        if (game.asset < 500000) { // 仮の採用費用
+        if (game.asset < 500000 && !isInfiniteAsset) { // 仮の採用費用
             terop('採用費用（50万円）が足りません！');
             return;
         }
-        game.asset -= 500000; // 採用費用
+        if (!isInfiniteAsset) {
+            game.asset -= 500000; // 採用費用
+        }
         game.employees.push(new Employee(grade));
         updateEmployeeSettings();
         terop(`${grade}従業員を雇用しました！`);
@@ -1932,7 +1907,6 @@
 
 
     function showItems() {
-        // 【修正点】入力ロックチェックを削除
         game.isPaused = true;
         updateItemPurchaseUI();
         document.getElementById('item-modal').style.display = 'block';
@@ -1959,12 +1933,14 @@
 
     function purchaseItem(key) {
         const item = ITEM_DATA[key];
-        if (game.asset < item.cost) {
+        if (game.asset < item.cost && !isInfiniteAsset) {
             terop('資産が足りません！');
             return;
         }
 
-        game.asset -= item.cost;
+        if (!isInfiniteAsset) {
+            game.asset -= item.cost;
+        }
 
         if (key === 'GARBAGE_CAN') {
             game.hasGarbageCan = true;
@@ -1980,7 +1956,6 @@
 
 
     function showMenu() {
-        // 【修正点】入力ロックチェックを削除
         game.isPaused = true;
         updateMenuSettings();
         document.getElementById('menu-modal').style.display = 'block';
@@ -2123,7 +2098,7 @@
     let gameLoopRef = null;
     let currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] };
     let isInfiniteAsset = false; // 無制限チートは別で管理
-    let isInputLocked = false; // 新しい入力ロックフラグの追加
+    // 💡 修正: isInputLocked の定義と関連ロジックを削除
 
     window.onload = () => {
         // URLパラメータにチートフラグがある場合は、強制的に設定画面に飛ばす
