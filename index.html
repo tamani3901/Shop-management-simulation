@@ -1156,12 +1156,12 @@
                         className = 'seat-occupied-confirmation';
                         statusText = `注文待ち（手動）<br>P:${customer.patience.toFixed(1)}<br>タップして注文確認`;
                         // 💡 修正: div全体をタップ可能にする
-                        onClickAction = `onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'OrderAsk')" style="cursor: pointer;"`;
+                        onClickAction = `onclick="handleSeatTap(game.customers.find(c => c.id === '${customer.id}'), 'OrderAsk')" style="cursor: pointer;"`;
                     } else if (customer.status === 'WaitPayment') {
                         className = 'seat-occupied-payment';
                         statusText = `会計待ち<br>P:${customer.patience.toFixed(1)}<br>タップして会計開始`;
                         // 💡 修正: div全体をタップ可能にする
-                        onClickAction = `onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'PaymentAsk')" style="cursor: pointer;"`;
+                        onClickAction = `onclick="handleSeatTap(game.customers.find(c => c.id === '${customer.id}'), 'PaymentAsk')" style="cursor: pointer;"`;
                     } else if (customer.status === 'WaitOrder' || customer.status === 'WaitCook' || customer.status === 'WaitServe') {
                         className = 'seat-occupied-wait';
                         statusText = `${customer.status === 'WaitOrder' ? '着席' : customer.status === 'WaitCook' ? '調理待ち' : '提供待ち'}<br>P:${customer.patience.toFixed(1)}`;
@@ -1574,6 +1574,32 @@
     // 4. 会話テロップとレジ操作ロジック
     // =========================================================
 
+    // --- タッチ操作の改善 ---
+    let lastTapTime = 0;
+    let tapTimeout;
+
+    function handleSeatTap(customer, type) {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTapTime;
+        
+        // ダブルタップ防止（300ms以内の連続タップを無視）
+        if (tapLength < 300 && tapLength > 0) {
+            return;
+        }
+        
+        lastTapTime = currentTime;
+        
+        // タップフィードバック
+        const seatElement = event.currentTarget;
+        seatElement.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            seatElement.style.transform = 'scale(1)';
+        }, 150);
+        
+        // 実際の処理を実行
+        showDialogue(customer, type);
+    }
+
     // --- 会話テロップ表示 ---
     function showDialogue(customer, type) {
         game.isPaused = true; 
@@ -1612,22 +1638,21 @@
             const closeBtn = document.createElement('button');
             closeBtn.textContent = 'OK (取引完了)';
             
-            // 【修正点 1】: 会計完了後の処理をインラインで記述し、確実に客を削除してゲームを再開する
             closeBtn.onclick = () => {
                 const finishedCustomer = game.customers.find(c => c.id === currentTransaction.customerId);
                 
                 if (finishedCustomer) {
-                    // 1. 客の削除と資産更新を完了させ、席を解放する (removeCustomer内でupdateDisplayも呼ばれている)
+                    // 客の削除と資産更新を完了させ、席を解放する
                     game.removeCustomer(finishedCustomer, finishedCustomer.seatId, true); 
                 }
                 
-                // 2. ダイアログを閉じる
+                // ダイアログを閉じる
                 dialogueBox.style.display = 'none';
 
-                // 3. ゲーム再開
+                // ゲーム再開
                 game.isPaused = false; 
                 
-                // 4. トランザクションをリセット
+                // トランザクションをリセット
                 currentTransaction.customerId = null;
                 currentTransaction.changeGiven = 0;
                 currentTransaction.receivedAmount = 0;
@@ -1662,7 +1687,7 @@
         currentTransaction.changeGiven = 0;
         currentTransaction.changeDispensed = {};
         
-        // 【修正点】客が渡す金額を決定し、お釣りが発生するようにする
+        // 客が渡す金額を決定し、お釣りが発生するようにする
         const bill = customer.billAmount;
         const availableBills = [10000, 5000, 1000];
         let received = bill;
@@ -1761,7 +1786,7 @@
                  return;
             }
             
-            // 【修正】客のステータスをPayingに変更し、会話終了まで席を解放しないようにする
+            // 客のステータスをPayingに変更し、会話終了まで席を解放しないようにする
             customer.status = 'Paying'; 
             
             // 会計後の客の会話を表示し、レジモーダルを閉じる
