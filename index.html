@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4.3 - ロックアップ対策強化)</title>
+    <title>飲食店経営シミュレーション (ver1.4.4 - ロックアップ・会計修正)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -415,8 +415,8 @@
         </div>
 
         <div id="step-start" class="option-group" style="text-align: center; margin-top: 30px; display: none;">
-            <button onclick="startGame()" class="action-btn" style="background-color: #4CAF50;">ゲーム開始</button>
-            <button onclick="checkSavedGame(); showConfirmation();" id="load-game-btn" class="action-btn" style="background-color: #ff9800; margin-left: 10px; display: none;">ロード</button>
+            <button onclick="showConfirmation()" class="action-btn" style="background-color: #4CAF50;">ゲーム開始</button>
+            <button onclick="loadGameFromHome()" id="load-game-btn" class="action-btn" style="background-color: #ff9800; margin-left: 10px; display: none;">ロード</button>
             <button onclick="resetSetup()" class="action-btn">設定をリセット</button>
             <p id="load-info" style="margin-top: 5px; font-size: 0.9em;"></p>
         </div>
@@ -587,8 +587,8 @@
                     <h4>客が渡したお金</h4>
                     <div id="register-message"></div>
                     <div class="payment-input">
-                        <label for="received-amount-input" style="font-size: 0.9em;">渡された金額(概算)</label>
-                        <input type="number" id="received-amount-input" value="0" min="0" step="10" oninput="updateRegisterDisplay()">
+                        <label for="received-amount-input" style="font-size: 0.9em;">渡された金額</label>
+                        <input type="text" id="received-amount-input" value="0" min="0" oninput="updateRegisterDisplay()">
                     </div>
                     
                     <h4 style="margin-top: 10px;">お釣りの種類 (ドラッグ相当)</h4>
@@ -766,8 +766,9 @@
             }
 
             if (this.patience <= 0) {
-                if (this.status !== 'Done' && this.status !== 'Paying') { // 会計・完了以外の客は怒って帰る
-                    this.status = 'Done'; // 怒って帰る
+                // 怒って帰る
+                if (this.status !== 'Done' && this.status !== 'Paying') { 
+                    this.status = 'Done'; // 怒って帰る（GameManager.updateで削除される）
                 }
             }
         }
@@ -879,14 +880,12 @@
             this.customers.forEach(customer => {
                 customer.update(deltaTime);
                 
-                // Doneステータスになった客は、次のゲームループで即座に解放
-                if (customer.status === 'Done') {
-                    // paid=trueの場合、removeCustomer内で資産が更新される
-                    const paid = customer.billAmount > 0; 
-                    this.removeCustomer(customer, customer.seatId, paid); 
+                // 【修正】怒って帰った客の即時解放（Customer.updateでpatienceが0以下になるとstatus='Done'になる）
+                if (customer.status === 'Done' && customer.patience <= 0) {
+                    this.removeCustomer(customer, customer.seatId, false); // 怒って帰った場合は支払っていない
                 } else if (customer.status === 'Paying' && !this.isManualMode) {
-                    // 自動モードでの支払い完了処理（数秒後にDoneに移行するロジックをここで追加しても良いが、シンプルにDoneに移行させる）
-                    customer.status = 'Done';
+                    // 自動モードでの支払い完了処理
+                    this.removeCustomer(customer, customer.seatId, true); 
                 }
             });
             this.processEmployeeTasks(deltaTime); 
@@ -955,14 +954,12 @@
 
             // 資産更新は、手動会計成功時か、自動会計時、または怒って帰った時のみ行う
             if (paid) {
-                // 手動会計は giveChange で profit が資産に加算されているため、ここでは何もしない
-                // 自動会計時は、ここで利益を加算
-                if (!this.isManualMode) {
-                    const profit = customer.billAmount - customer.totalCost;
-                    this.asset += profit;
-                    terop(`席 ${seatId} の会計完了（自動）！ 注文: ${customer.orderedItem.name} x ${customer.numPeople}、利益: +${profit.toLocaleString()}円`);
-                }
+                // 会計成功
+                const profit = customer.billAmount - customer.totalCost;
+                this.asset += profit;
+                terop(`席 ${seatId} の会計完了！ 注文: ${customer.orderedItem.name} x ${customer.numPeople}、利益: +${profit.toLocaleString()}円`);
             } else {
+                // 怒って帰る/取引中止
                 this.asset -= customer.totalCost;
                 this.reputation = Math.max(1, this.reputation - 0.1);
                 terop(`席 ${seatId} のお客様が怒って帰りました...評判低下 & 損失: ${customer.totalCost.toLocaleString()}円`);
@@ -1039,7 +1036,7 @@
             // 1. 閉店時点で残っている客は怒って帰る
             this.customers.forEach(customer => {
                 // 支払い完了していない客は損失
-                if (customer.status !== 'Done' && customer.status !== 'Paying') {
+                if (customer.status !== 'Done') {
                      this.removeCustomer(customer, customer.seatId, false);
                 }
             });
@@ -1572,11 +1569,10 @@
             const closeBtn = document.createElement('button');
             closeBtn.textContent = 'OK (取引完了)';
             closeBtn.onclick = () => {
-                // 会計処理はgiveChangeで行われている
-                // 【重要修正】ここで客をDoneにして、ゲームを再開する
                 const finishedCustomer = game.customers.find(c => c.id === currentTransaction.customerId);
                 if (finishedCustomer) {
-                    finishedCustomer.status = 'Done'; 
+                    // 【修正点】ここで直接客を解放し、支払済みのフラグ(true)を渡す
+                    game.removeCustomer(finishedCustomer, finishedCustomer.seatId, true); 
                 }
                 closeDialogue(); 
             };
@@ -1589,12 +1585,12 @@
     function closeDialogue(keepPaused = false) {
         document.getElementById('customer-dialogue-box').style.display = 'none';
         if (!keepPaused) {
-            // 【強化修正】会話終了時にゲームを再開。setTimeoutで確実に次のイベントループで実行させ、UIを再描画
+            // 【強化修正】会話終了時にゲームを再開。50msの遅延を設けて連打による状態の衝突を防ぐ
             setTimeout(() => {
                 game.isPaused = false;
-                game.updateDisplay(); // UIを即座に更新してボタンの非活性化を防ぐ
+                game.updateDisplay(); 
                 console.log("closeDialogue: ゲーム再開 (isPaused = false)");
-            }, 0);
+            }, 50); // 50msの遅延
         } else {
              console.log("closeDialogue: 一時停止継続 (keepPaused = true)");
         }
@@ -1612,9 +1608,29 @@
         currentTransaction.changeGiven = 0;
         currentTransaction.changeDispensed = {};
         
+        // 【修正点】客が渡す金額を決定し、お釣りが発生するようにする
+        const bill = customer.billAmount;
+        const availableBills = [10000, 5000, 1000];
+        let received = bill;
+
+        // 請求額より大きい最小の紙幣額を選ぶ
+        for (const cash of availableBills) {
+            if (cash > bill) {
+                received = cash;
+                break;
+            }
+        }
+
+        // 請求額が10000円以上で、receivedがbillと同じままの場合（紙幣で賄えない場合）
+        if (received === bill) {
+            // 1000円単位で切り上げて、さらに1000円を上乗せする
+            received = Math.ceil(bill / 1000) * 1000 + 1000;
+        }
+
         // UIを初期化
         document.getElementById('bill-amount-display').textContent = customer.billAmount.toLocaleString();
-        document.getElementById('received-amount-input').value = customer.billAmount; 
+        document.getElementById('received-amount-input').value = received; // 決定した金額をセット
+        currentTransaction.receivedAmount = received; // 初期値として設定
         updateRegisterDisplay();
         
         // コイントレイのボタンを生成
@@ -1630,7 +1646,11 @@
     }
 
     function updateRegisterDisplay() {
-        const inputAmount = parseInt(document.getElementById('received-amount-input').value) || 0;
+        const inputElement = document.getElementById('received-amount-input');
+        // 数字以外を削除
+        inputElement.value = inputElement.value.replace(/[^0-9]/g, '');
+        
+        const inputAmount = parseInt(inputElement.value) || 0;
         
         currentTransaction.receivedAmount = inputAmount;
         const changeDue = currentTransaction.receivedAmount - currentTransaction.billAmount;
@@ -1648,6 +1668,10 @@
             changeDueDisplay.textContent = '不足！';
             changeDueDisplay.style.color = 'red';
             registerMessage.textContent = '客の支払い額が不足しています。';
+        } else if (changeDue === 0) {
+            changeDueDisplay.textContent = '0';
+            changeDueDisplay.style.color = 'yellow';
+            registerMessage.textContent = 'ぴったりです。お釣りは不要です。';
         } else {
             changeDueDisplay.textContent = changeDue.toLocaleString();
             changeDueDisplay.style.color = 'yellow';
@@ -1684,9 +1708,8 @@
             }
             
             // 請求額と原価を元に利益を計算し、資産を更新
-            const profit = customer.billAmount - customer.totalCost;
-            game.asset += profit;
-
+            // 利益の計算と資産の更新はremoveCustomer内で行われる
+            
             // 【修正】客のステータスをPayingに変更し、会話終了まで席を解放しないようにする
             customer.status = 'Paying'; 
             
@@ -1694,7 +1717,8 @@
             closeModal('register-modal', true); // レジを閉じるが、一時停止は継続
             showDialogue(customer, 'PaymentComplete'); 
             
-            terop(`席 ${customer.seatId} の会計成功！ お釣り: ${changeDue.toLocaleString()}円、利益: +${profit.toLocaleString()}円`);
+            // removeCustomerはPaymentCompleteのOKボタンで実行されるため、ここではteropのみ
+            // terop(`席 ${customer.seatId} の会計成功！ お釣り: ${changeDue.toLocaleString()}円、利益: +${profit.toLocaleString()}円`);
 
         } else {
             // お釣りが間違っている
@@ -1709,7 +1733,9 @@
         
         if (modalId === 'register-modal') {
             // レジ取引を中止した場合（giveChange以外から呼ばれた場合）
-            if (game.customers.some(c => c.id === currentTransaction.customerId && c.status === 'WaitPayment')) {
+            const customer = game.customers.find(c => c.id === currentTransaction.customerId);
+
+            if (customer && customer.status === 'WaitPayment') {
                 // 取引中止
                 terop('会計取引を中止しました。');
             }
@@ -1719,12 +1745,12 @@
         }
 
         if (!keepPaused) {
-            // 【強化修正】設定、メニュー、アイテム、または取引中止のレジモーダルを閉じた場合は再開。setTimeoutで確実に次のイベントループで実行させ、UIを再描画
+            // 【強化修正】設定、メニュー、アイテム、または取引中止のレジモーダルを閉じた場合は再開。50msの遅延を設けて連打による状態の衝突を防ぐ
             setTimeout(() => {
                 game.isPaused = false;
                 game.updateDisplay(); // UIを即座に更新してボタンの非活性化を防ぐ
                 console.log("closeModal: ゲーム再開 (isPaused = false)");
-            }, 0);
+            }, 50); // 50msの遅延
         } else {
             console.log("closeModal: 一時停止継続 (keepPaused = true)");
         }
