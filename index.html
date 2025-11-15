@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4.1 - バグ修正)</title>
+    <title>飲食店経営シミュレーション (ver1.4.2 - バグ修正)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -1589,8 +1589,10 @@
     function closeDialogue(keepPaused = false) {
         document.getElementById('customer-dialogue-box').style.display = 'none';
         if (!keepPaused) {
-            // 【修正】会話終了時にゲームを再開
-            game.isPaused = false;
+            // 【重要修正】会話終了時にゲームを再開。setTimeoutで確実に次のイベントループで実行させる
+            setTimeout(() => {
+                game.isPaused = false;
+            }, 0);
         }
     }
 
@@ -1713,8 +1715,10 @@
         }
 
         if (!keepPaused) {
-            // 【修正】設定、メニュー、アイテム、または取引中止のレジモーダルを閉じた場合は再開
-            game.isPaused = false;
+            // 【重要修正】設定、メニュー、アイテム、または取引中止のレジモーダルを閉じた場合は再開。setTimeoutで確実に次のイベントループで実行させる
+            setTimeout(() => {
+                game.isPaused = false;
+            }, 0);
         }
     }
 
