@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4)</title>
+    <title>飲食店経営シミュレーション (ver1.4.1 - バグ修正)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -415,7 +415,7 @@
         </div>
 
         <div id="step-start" class="option-group" style="text-align: center; margin-top: 30px; display: none;">
-            <button onclick="showConfirmation()" class="action-btn" style="background-color: #4CAF50;">ゲーム開始</button>
+            <button onclick="startGame()" class="action-btn" style="background-color: #4CAF50;">ゲーム開始</button>
             <button onclick="checkSavedGame(); showConfirmation();" id="load-game-btn" class="action-btn" style="background-color: #ff9800; margin-left: 10px; display: none;">ロード</button>
             <button onclick="resetSetup()" class="action-btn">設定をリセット</button>
             <p id="load-info" style="margin-top: 5px; font-size: 0.9em;"></p>
@@ -725,9 +725,8 @@
             this.numPeople = numPeople; 
             this.orderType = orderType; 
             this.seatId = seatId;
-            // 【修正】初期ステータスを待機状態に変更。手動/自動はspawnCustomerで分岐
-            this.status = 'WaitOrder'; 
             // WaitOrder, WaitConfirmation, WaitCook, WaitServe, Eating, WaitPayment, Paying, Done
+            this.status = 'WaitOrder'; 
             this.patience = 60;
             this.mealTimeLeft = 30;    
             this.billAmount = 0;
@@ -748,7 +747,7 @@
             if (this.status === 'Eating') {
                 this.mealTimeLeft -= deltaTime;
                 if (this.mealTimeLeft <= 0) {
-                    // 【修正/追加】食事終了後のステータス分岐
+                    // 食事終了後のステータス分岐
                     if (game.isManualMode) {
                         this.status = 'WaitPayment'; // 支払い待ち（プレイヤーの会計を待つ）
                         terop(`席 ${this.seatId} のお客様が会計を待っています。`);
@@ -758,16 +757,16 @@
                 }
             }
             
-            // 【修正】満足度（Patience）の減り方を調整し、ゴミ箱効果を適用
+            // 満足度（Patience）の減り方を調整し、ゴミ箱効果を適用
             const baseRate = ['Eating', 'WaitPayment', 'Paying'].includes(this.status) ? 0.3 : 1.0; 
             const garbageCanEffect = game.hasGarbageCan ? 0.8 : 1.0;
 
-            if (this.status !== 'Done') { // 【修正】Doneになった客はPatienceを減らさない
+            if (this.status !== 'Done') { // Doneになった客はPatienceを減らさない
                 this.patience -= deltaTime * baseRate * garbageCanEffect;
             }
 
             if (this.patience <= 0) {
-                if (this.status !== 'Done' && this.status !== 'Paying') { // 自動会計中は怒って帰らない
+                if (this.status !== 'Done' && this.status !== 'Paying') { // 会計・完了以外の客は怒って帰る
                     this.status = 'Done'; // 怒って帰る
                 }
             }
@@ -803,8 +802,8 @@
             
             this.hasGarbageCan = false;
 
-            // 【追加】手動/自動モード切り替え
-            this.isManualMode = true; // デフォルトは手動
+            // 【修正】手動/自動モード切り替えのデフォルト
+            this.isManualMode = true; 
         }
         
         resetGame() {
@@ -829,7 +828,7 @@
             this.customerSpawnInterval = 10; 
             
             this.hasGarbageCan = false;
-            this.isManualMode = true; // リセット時も手動に戻す
+            this.isManualMode = true; 
         }
 
         initializeGame(settings) {
@@ -861,8 +860,12 @@
         }
 
         update(deltaTime) {
-            if (this.isPaused) return;
-            // 現実5分(300秒)でゲーム時間600を達成するための速度 (600 / 300 = 2.0)
+            // 【重要】ゲーム停止中はメインロジックを実行しない
+            if (this.isPaused) {
+                this.updateDisplay(); // UIの表示は更新して、客のPatienceは減るようにする
+                return;
+            } 
+            
             const GAME_SPEED = 2.0;
             this.time += deltaTime * GAME_SPEED; 
 
@@ -876,11 +879,14 @@
             this.customers.forEach(customer => {
                 customer.update(deltaTime);
                 
-                // 【修正/追加】手動モードの場合、WaitPaymentで止まるためPaying/Doneのみ処理
-                if (customer.status === 'Paying') {
-                    this.removeCustomer(customer, customer.seatId, true);
-                } else if (customer.status === 'Done') {
-                    this.removeCustomer(customer, customer.seatId, false);
+                // Doneステータスになった客は、次のゲームループで即座に解放
+                if (customer.status === 'Done') {
+                    // paid=trueの場合、removeCustomer内で資産が更新される
+                    const paid = customer.billAmount > 0; 
+                    this.removeCustomer(customer, customer.seatId, paid); 
+                } else if (customer.status === 'Paying' && !this.isManualMode) {
+                    // 自動モードでの支払い完了処理（数秒後にDoneに移行するロジックをここで追加しても良いが、シンプルにDoneに移行させる）
+                    customer.status = 'Done';
                 }
             });
             this.processEmployeeTasks(deltaTime); 
@@ -900,7 +906,6 @@
                 }
 
                 const numPeople = Math.floor(Math.random() * 4) + 1;
-                // 【修正】手動注文の確率を少し下げる（手動だと大変なため）
                 const orderType = Math.random() < 0.8 ? 'タブレット' : '手動';
 
                 const seatIndex = this.seatsData.findIndex(seat => !seat.isOccupied);
@@ -919,7 +924,7 @@
                     
                     this.customers.push(customer);
                     
-                    // 【修正/追加】注文フローの分岐
+                    // 注文フローの分岐
                     if (orderType === 'タブレット' || !this.isManualMode) {
                         customer.status = 'WaitCook'; // 自動で調理待ち
                         this.cookQueue.push({ customer: customer });
@@ -948,10 +953,15 @@
             this.cookQueue = this.cookQueue.filter(q => q.customer.id !== customer.id);
             this.employeeTasks = this.employeeTasks.filter(t => t.customer.id !== customer.id);
 
+            // 資産更新は、手動会計成功時か、自動会計時、または怒って帰った時のみ行う
             if (paid) {
-                const profit = customer.billAmount - customer.totalCost;
-                this.asset += profit;
-                terop(`席 ${seatId} の会計完了！ 注文: ${customer.orderedItem.name} x ${customer.numPeople}、利益: +${profit.toLocaleString()}円`);
+                // 手動会計は giveChange で profit が資産に加算されているため、ここでは何もしない
+                // 自動会計時は、ここで利益を加算
+                if (!this.isManualMode) {
+                    const profit = customer.billAmount - customer.totalCost;
+                    this.asset += profit;
+                    terop(`席 ${seatId} の会計完了（自動）！ 注文: ${customer.orderedItem.name} x ${customer.numPeople}、利益: +${profit.toLocaleString()}円`);
+                }
             } else {
                 this.asset -= customer.totalCost;
                 this.reputation = Math.max(1, this.reputation - 0.1);
@@ -1043,8 +1053,7 @@
             this.asset -= dailyExpense;
             
             // 4. 評判の更新
-            // (ここではシンプルに、赤字なら評判微減、黒字なら微増とする)
-            if (this.asset > 15000000) { // 仮の基準
+            if (this.asset > 15000000) { 
                 this.reputation = Math.min(5, this.reputation + 0.1);
             } else {
                 this.reputation = Math.max(1, this.reputation - 0.1);
@@ -1069,7 +1078,7 @@
 
                 terop(`Day ${this.day} スタート！ 総人件費: ${dailyExpense.toLocaleString()}円。現在の資産: ${this.asset.toLocaleString()}円`);
                 this.updateDisplay();
-            }, 5000); // 5秒間結果表示
+            }, 5000); 
         }
 
 
@@ -1083,16 +1092,18 @@
             document.getElementById('time-display').textContent = timeStr;
             document.getElementById('day-display').textContent = `Day ${this.day}`;
             
-            // 【追加/修正】手動モードボタンの表示更新
+            // 手動モードボタンの表示更新
             const modeText = this.isManualMode ? '手動' : '自動';
             const btn = document.getElementById('manual-toggle-btn');
-            btn.textContent = `注文/会計: ${modeText}`;
-            btn.style.backgroundColor = this.isManualMode ? '#ff9800' : '#4CAF50';
+            if (btn) { // エラー防止
+                btn.textContent = `注文/会計: ${modeText}`;
+                btn.style.backgroundColor = this.isManualMode ? '#ff9800' : '#4CAF50';
+            }
 
 
             const seatMap = document.getElementById('seat-map');
             
-            // 【修正】席のステータス表示とボタンを追加
+            // 席のステータス表示とボタンを追加
             seatMap.innerHTML = this.seatsData.map(seat => {
                 const customer = this.customers.find(c => c.id === seat.customerId);
                 let className = 'seat-empty';
@@ -1209,7 +1220,7 @@
             // その他設定
             this.hasGarbageCan = data.hasGarbageCan || false;
             isInfiniteAsset = data.isInfiniteAsset || false;
-            this.isManualMode = data.isManualMode !== undefined ? data.isManualMode : true; // 【追加】互換性のためにundefinedチェック
+            this.isManualMode = data.isManualMode !== undefined ? data.isManualMode : true; 
             
             // 無制限チートのUI反映
             const toggle = document.getElementById('infinite-asset-toggle');
@@ -1226,7 +1237,7 @@
                 type: this.storeType,
                 location: this.location,
                 currentSeats: this.currentSeats,
-                initialMenu: this.menu // 復元したメニューを渡す
+                initialMenu: this.menu 
             });
 
             this.updateDisplay();
@@ -1390,9 +1401,7 @@
         const deltaTime = (timestamp - lastTime) / 1000;
         lastTime = timestamp;
 
-        if (!game.isPaused) {
-            game.update(deltaTime);
-        }
+        game.update(deltaTime);
         
         // 無制限チートがONの場合は資産を常に一定額以上に保つ
         if (isInfiniteAsset) {
@@ -1493,6 +1502,33 @@
         }
     }
 
+    // 【追加】自動/手動切り替え機能
+    function toggleManualMode() {
+        game.isManualMode = !game.isManualMode;
+        
+        // モード変更時に、進行中の客の状態をリセット（強制的に次へ進める）
+        game.customers.forEach(customer => {
+            if (customer.status === 'WaitConfirmation' || customer.status === 'WaitPayment') {
+                if (!game.isManualMode) {
+                    // 自動モードへ: 注文/会計を自動で完了させる
+                    if (customer.status === 'WaitConfirmation') {
+                        game.manualConfirmOrder(customer.id); // 注文をキューに追加
+                    } else if (customer.status === 'WaitPayment') {
+                        customer.status = 'Paying'; // 自動会計へ移行
+                    }
+                } else {
+                     // 手動モードへ: 注文待ちの場合はそのまま、支払い待ちの場合は待機継続
+                     if (customer.status === 'Paying') {
+                         customer.status = 'WaitPayment'; // PayingからWaitPaymentに戻す
+                     }
+                }
+            }
+        });
+
+        terop(`注文/会計モードを${game.isManualMode ? '手動' : '自動'}に切り替えました。`);
+        game.updateDisplay();
+    }
+
 
     // =========================================================
     // 4. 会話テロップとレジ操作ロジック
@@ -1500,7 +1536,9 @@
 
     // --- 会話テロップ表示 ---
     function showDialogue(customer, type) {
-        game.isPaused = true;
+        // 【修正】会話中は必ず一時停止
+        game.isPaused = true; 
+
         const dialogueBox = document.getElementById('customer-dialogue-box');
         const dialogueText = document.getElementById('dialogue-text');
         const dialogueOptions = document.getElementById('dialogue-options');
@@ -1518,7 +1556,6 @@
             confirmBtn.onclick = () => {
                 game.manualConfirmOrder(customer.id);
                 closeDialogue();
-                game.isPaused = false;
             };
             dialogueOptions.appendChild(confirmBtn);
         } else if (type === 'PaymentAsk') {
@@ -1527,7 +1564,7 @@
             confirmBtn.textContent = 'OK (レジを開く)';
             confirmBtn.onclick = () => {
                 game.manualInitiatePayment(customer.id);
-                closeDialogue(true); // レジモーダルが開くため、ここでは isPaused は解除しない
+                closeDialogue(true); // レジモーダルが開くので、一時停止解除はしない
             };
             dialogueOptions.appendChild(confirmBtn);
         } else if (type === 'PaymentComplete') {
@@ -1535,9 +1572,13 @@
             const closeBtn = document.createElement('button');
             closeBtn.textContent = 'OK (取引完了)';
             closeBtn.onclick = () => {
-                // 会計処理はgiveChangeで行われているため、ここでは画面を閉じるだけ
-                closeDialogue(false); 
-                game.isPaused = false;
+                // 会計処理はgiveChangeで行われている
+                // 【重要修正】ここで客をDoneにして、ゲームを再開する
+                const finishedCustomer = game.customers.find(c => c.id === currentTransaction.customerId);
+                if (finishedCustomer) {
+                    finishedCustomer.status = 'Done'; 
+                }
+                closeDialogue(); 
             };
             dialogueOptions.appendChild(closeBtn);
         }
@@ -1548,13 +1589,14 @@
     function closeDialogue(keepPaused = false) {
         document.getElementById('customer-dialogue-box').style.display = 'none';
         if (!keepPaused) {
+            // 【修正】会話終了時にゲームを再開
             game.isPaused = false;
         }
     }
 
     // --- レジ操作 ---
     function openRegisterModal(customer) {
-        game.isPaused = true; // 会計中は一時停止
+        game.isPaused = true; 
         document.getElementById('register-modal').style.display = 'block';
 
         // トランザクション情報を初期化
@@ -1566,7 +1608,7 @@
         
         // UIを初期化
         document.getElementById('bill-amount-display').textContent = customer.billAmount.toLocaleString();
-        document.getElementById('received-amount-input').value = customer.billAmount; // 概算で同額を入れておく
+        document.getElementById('received-amount-input').value = customer.billAmount; 
         updateRegisterDisplay();
         
         // コイントレイのボタンを生成
@@ -1639,12 +1681,12 @@
             const profit = customer.billAmount - customer.totalCost;
             game.asset += profit;
 
-            customer.status = 'Done'; // 完了ステータスに
+            // 【修正】客のステータスをPayingに変更し、会話終了まで席を解放しないようにする
+            customer.status = 'Paying'; 
             
-            // 会計後の客の会話を表示し、モーダルを閉じる
-            closeModal('register-modal');
-            showDialogue(customer, 'PaymentComplete');
-            game.updateDisplay(); // 即座に席を解放
+            // 会計後の客の会話を表示し、レジモーダルを閉じる
+            closeModal('register-modal', true); // レジを閉じるが、一時停止は継続
+            showDialogue(customer, 'PaymentComplete'); 
             
             terop(`席 ${customer.seatId} の会計成功！ お釣り: ${changeDue.toLocaleString()}円、利益: +${profit.toLocaleString()}円`);
 
@@ -1655,16 +1697,23 @@
         }
     }
     
-    // 【修正】モーダルを閉じる際にレジの状態もリセット
-    function closeModal(modalId) {
+    // 【修正】モーダルを閉じる際に、一時停止を解除するロジックを整理
+    function closeModal(modalId, keepPaused = false) {
         document.getElementById(modalId).style.display = 'none';
+        
         if (modalId === 'register-modal') {
+            // レジ取引を中止した場合（giveChange以外から呼ばれた場合）
+            if (game.customers.some(c => c.id === currentTransaction.customerId && c.status === 'WaitPayment')) {
+                // 取引中止
+                terop('会計取引を中止しました。');
+            }
             currentTransaction.customerId = null;
             currentTransaction.changeGiven = 0;
             currentTransaction.receivedAmount = 0;
-            game.isPaused = false;
         }
-        if (modalId === 'settings-modal' || modalId === 'menu-modal' || modalId === 'item-modal') {
+
+        if (!keepPaused) {
+            // 【修正】設定、メニュー、アイテム、または取引中止のレジモーダルを閉じた場合は再開
             game.isPaused = false;
         }
     }
@@ -1693,7 +1742,6 @@
         document.getElementById('current-employee-count').textContent = game.employees.length;
     }
 
-    // 【追加】マスターを雇用可能に
     function addEmployee(grade) {
         if (game.asset < 500000) { // 仮の採用費用
             terop('採用費用（50万円）が足りません！');
