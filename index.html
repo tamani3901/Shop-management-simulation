@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4.5 - ロックアップ・レスポンス修正)</title>
+    <title>飲食店経営シミュレーション (ver1.4.6 - 二重タップ修正)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -1112,11 +1112,13 @@
                         className = 'seat-occupied-confirmation';
                         statusText = `注文待ち（手動）<br>P:${customer.patience.toFixed(1)}`;
                         // 注文確認ボタン（会話モーダルを介して）
+                        // **【重要】ボタン押下時に isInputLocked をチェックしないのは、showDialogue内でチェックしているため**
                         buttonHTML = `<button onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'OrderAsk')" class="action-btn" style="background-color: #1E90FF; padding: 5px; font-size: 0.8em; margin-top: 5px;">注文を取る</button>`;
                     } else if (customer.status === 'WaitPayment') {
                         className = 'seat-occupied-payment';
                         statusText = `会計待ち<br>P:${customer.patience.toFixed(1)}`;
                         // 会計開始ボタン（会話モーダルを介して）
+                        // **【重要】ボタン押下時に isInputLocked をチェックしないのは、showDialogue内でチェックしているため**
                         buttonHTML = `<button onclick="showDialogue(game.customers.find(c => c.id === '${customer.id}'), 'PaymentAsk')" class="action-btn" style="background-color: #008000; padding: 5px; font-size: 0.8em; margin-top: 5px;">会計する</button>`;
                     } else if (customer.status === 'WaitOrder' || customer.status === 'WaitCook' || customer.status === 'WaitServe') {
                         className = 'seat-occupied-wait';
@@ -1595,13 +1597,13 @@
             isInputLocked = true; // 新しい入力ロック
             console.log("closeDialogue: 入力ロック (isInputLocked = true)");
 
-            // 100msの遅延を設けて、ゲーム再開とロック解除を行う
+            // 遅延を150msに強化し、ゲーム再開をロック解除よりも後に行う
             setTimeout(() => {
-                game.isPaused = false;
-                game.updateDisplay(); 
                 isInputLocked = false; // ロック解除
-                console.log("closeDialogue: ゲーム再開 & ロック解除 (isPaused = false, isInputLocked = false)");
-            }, 100); // 遅延を100msに強化
+                game.isPaused = false; // ゲーム再開
+                game.updateDisplay(); 
+                console.log("closeDialogue: ロック解除 & ゲーム再開 (isPaused = false, isInputLocked = false)");
+            }, 150); // 遅延を150msに強化
         } else {
              console.log("closeDialogue: 一時停止継続 (keepPaused = true)");
         }
@@ -1760,13 +1762,13 @@
             isInputLocked = true; // 新しい入力ロック
             console.log("closeModal: 入力ロック (isInputLocked = true)");
             
-            // 100msの遅延を設けて、ゲーム再開とロック解除を行う
+            // 遅延を150msに強化し、ゲーム再開をロック解除よりも後に行う
             setTimeout(() => {
-                game.isPaused = false;
-                game.updateDisplay(); // UIを即座に更新してボタンの非活性化を防ぐ
                 isInputLocked = false; // ロック解除
-                console.log("closeModal: ゲーム再開 & ロック解除 (isPaused = false, isInputLocked = false)");
-            }, 100); // 遅延を100msに強化
+                game.isPaused = false; // ゲーム再開
+                game.updateDisplay(); // UIを即座に更新してボタンの非活性化を防ぐ
+                console.log("closeModal: ロック解除 & ゲーム再開 (isPaused = false, isInputLocked = false)");
+            }, 150); // 遅延を150msに強化
         } else {
             console.log("closeModal: 一時停止継続 (keepPaused = true)");
         }
