@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飲食店経営シミュレーション (ver1.4.10 - タップ/会計フィックス)</title>
+    <title>飲食店経営シミュレーション (ver1.4.11 - 決定版フィックス)</title>
     <style>
         /* --- CSS: スタイル定義 --- */
         body {
@@ -1608,16 +1608,31 @@
             dialogueOptions.appendChild(confirmBtn);
         } else if (type === 'PaymentComplete') {
              dialogueText.innerHTML = `「お釣り**${currentTransaction.changeGiven.toLocaleString()}円**、確かに受け取りました。ありがとう！」`;
+            
             const closeBtn = document.createElement('button');
             closeBtn.textContent = 'OK (取引完了)';
+            
+            // 【修正点 1】: 会計完了後の処理をインラインで記述し、確実に客を削除してゲームを再開する
             closeBtn.onclick = () => {
                 const finishedCustomer = game.customers.find(c => c.id === currentTransaction.customerId);
+                
                 if (finishedCustomer) {
-                    // 💡 修正: ここで直接客を解放し、支払済みのフラグ(true)を渡す
+                    // 1. 客の削除と資産更新を完了させ、席を解放する (removeCustomer内でupdateDisplayも呼ばれている)
                     game.removeCustomer(finishedCustomer, finishedCustomer.seatId, true); 
                 }
-                closeDialogue(); 
+                
+                // 2. ダイアログを閉じる
+                dialogueBox.style.display = 'none';
+
+                // 3. ゲーム再開
+                game.isPaused = false; 
+                
+                // 4. トランザクションをリセット
+                currentTransaction.customerId = null;
+                currentTransaction.changeGiven = 0;
+                currentTransaction.receivedAmount = 0;
             };
+            
             dialogueOptions.appendChild(closeBtn);
         }
 
@@ -2098,7 +2113,6 @@
     let gameLoopRef = null;
     let currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] };
     let isInfiniteAsset = false; // 無制限チートは別で管理
-    // 💡 修正: isInputLocked の定義と関連ロジックを削除
 
     window.onload = () => {
         // URLパラメータにチートフラグがある場合は、強制的に設定画面に飛ばす
