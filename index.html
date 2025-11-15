@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>飲食店経営シミュレーション ver1.4 (改良版)</title>
+<title>飲食店経営シミュレーション ver1.4 (ver1.3機能統合版)</title>
 <style>
-  /* 基本レイアウト */
+  /* --- 基本レイアウト (ver1.4ベース) --- */
   body{font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f4f6f8; margin:0; padding:18px; display:flex; justify-content:center;}
   #game-container{width:95%; max-width:1100px; background:#fff; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,0.08); padding:18px;}
   h1, h2{color:#2e7d32; margin:8px 0;}
   .button{background:#2196f3;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
   .danger{background:#f44336;}
+  /* ゲームUIのグリッド */
   #game-ui{display:grid; grid-template-columns:3fr 1fr; gap:12px; grid-template-areas:"header header" "main sidebar";}
   #header{grid-area:header; display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid #eee;}
   #main{grid-area:main; background:#e8f5e9; padding:14px; border-radius:8px; min-height:420px;}
@@ -22,7 +23,6 @@
   .seat-eat{background:#fff0f0; border:1px solid #f44336;}
   .customer-img{width:60px;height:60px;object-fit:cover;border-radius:8px; display:block;margin:8px auto;}
   .speech{display:inline-block;background:#fff;border-radius:12px;padding:8px 10px;box-shadow:0 2px 8px rgba(0,0,0,0.12); margin-top:6px;}
-  .speech:after{content:''; position:absolute; width:0;height:0;}
   #log-terop{position:fixed; left:50%; bottom:0; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:#fff; padding:8px 14px; border-radius:8px 8px 0 0; opacity:0; transition:opacity .4s; z-index:9999;}
   /* モーダル */
   .modal{display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;}
@@ -33,74 +33,177 @@
   .draggable-coin{display:inline-block;padding:6px 10px;border-radius:6px;background:#fafafa;border:1px solid #bbb;cursor:grab;margin:6px;}
   .zone{min-height:68px;padding:8px;border-radius:8px;border:1px dashed #bbb;background:#fff;}
   .small{font-size:0.9em;color:#444;}
-  /* responsive */
-  @media(max-width:800px){ #game-ui{grid-template-columns:1fr; grid-template-areas:"header" "main" "sidebar";} }
+  
+  /* --- ver1.3からの画面切り替え・設定画面用CSS (追加) --- */
+  .screen{display:none;} /* 初期は全て非表示 */
+  .screen.active{display:block;} /* アクティブな画面のみ表示 */
+  .option-group{margin-bottom:20px;padding:15px;border:1px solid #ddd;border-radius:8px;}
+  .button-list button, .action-btn, .button-list a{
+      background-color:#2196F3;color:white;border:none;padding:10px 20px;margin:5px;
+      border-radius:5px;cursor:pointer;transition:background-color 0.3s;text-decoration:none;
+      display:inline-block;
+  }
+  .button-list button:hover, .action-btn:hover, .button-list a:hover{background-color:#0b7dda;}
+  .action-btn{background-color:#4CAF50;}
+  .action-btn:hover{background-color:#45a049;}
+  #menu-selection-area button.selected {
+      background-color: #4CAF50 !important; /* 選択時の色 */
+      border: 2px solid #388e3c;
+  }
+  
+  /* --- スマホモード用CSS (ver1.3から追加) --- */
+  body.mobile-mode #game-container {
+    padding: 16px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 480px;
+  }
+  body.mobile-mode #game-ui{ 
+    grid-template-columns:1fr; 
+    grid-template-areas:"header" "main" "sidebar";
+  }
+  body.mobile-mode #header, body.mobile-mode #status-display {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 </style>
 </head>
-<body>
+<body id="body-container">
 <div id="game-container">
-  <h1>飲食店経営シミュレーション ver1.4（改良）</h1>
-
-  <div id="game-ui">
-    <div id="header">
-      <div>
-        <button class="button" onclick="openMenu()">メニュー</button>
-        <button class="button" onclick="openSettings()">設定</button>
-        <button class="button" onclick="openItems()">アイテム</button>
-        <button class="button" onclick="saveGame()">セーブ</button>
-        <button class="button danger" onclick="quitGame()">やめる</button>
-      </div>
-      <div>
-        <span id="day-display">Day 1</span> | <span id="time-display">00:00</span>
-      </div>
-      <div id="status-display">
-        <span id="asset-display">資産: 15,000,000円</span><br>
-        <span id="reputation-display">評判: ★3.0</span>
-      </div>
+    
+    <div id="home-screen" class="screen active">
+        <h1>ようこそ！飲食店経営シミュレーションへ</h1>
+        <div class="button-list" style="text-align: center;">
+            <button onclick="showScreen('start-screen')">新しいゲームを開始</button>
+            <button onclick="loadGameFromHome()">セーブデータを読み込む</button>
+            <a href="https://tamani3901.github.io/ti-tobann/" target="_blank" style="background-color: #ff5722;">チートモード対応版へ</a> 
+            <button id="mobile-toggle-btn" onclick="toggleMobileMode()">スマホモード</button>
+        </div>
     </div>
 
-    <div id="main">
-      <h2>店舗フロア（<span id="store-type-display">—</span>）</h2>
-      <div id="seat-map"></div>
+    <div id="start-screen" class="screen">
+        <h2>新規ゲーム設定</h2>
+        
+        <div id="step-type" class="option-group">
+            <h3>1. 店の種類を選んでください</h3>
+            <div class="button-list">
+                <button data-type="FastFood" onclick="selectType('FastFood')">ファーストフード</button>
+                <button data-type="Restaurant" onclick="selectType('Restaurant')">レストラン</button>
+            </div>
+            <p id="type-info"></p>
+        </div>
+
+        <div id="step-location" class="option-group" style="display: none;">
+            <h3>2. 場所を選んでください</h3>
+            <div class="button-list">
+                <button data-loc="大都市部" onclick="selectLocation('大都市部')">大都市部 (最大10席)</button>
+                <button data-loc="都市部" onclick="selectLocation('都市部')">都市部 (最大7席)</button>
+                <button data-loc="中都市" onclick="selectLocation('中都市')">中都市 (最大5席)</button>
+                <button data-loc="小都市" onclick="selectLocation('小都市')">小都市 (最大3席)</button>
+            </div>
+            <p id="location-info"></p>
+        </div>
+
+        <div id="step-size" class="option-group" style="display: none;">
+            <h3>3. 店の大きさを決めてください (場所による制限あり、最大20席)</h3>
+            <p>選択した場所での上限: <span id="max-seats"></span>席</p>
+            <p>現在の席数: <span id="current-seats">0</span> 席 (2人掛けテーブル <span id="current-tables">0</span> 個)</p>
+            <p>初期費用: <span id="initial-cost">0</span> 円</p>
+            <div class="button-list">
+                <button onclick="changeSeats(-2)">席を減らす</button>
+                <button onclick="changeSeats(2)">席を増やす</button>
+            </div>
+            <p style="font-size:0.9em;color:#666;margin-top:8px;">※ゲーム開始後も設定から席数を変更可能（上限20席、偶数のみ）</p>
+        </div>
+        
+        <div id="step-menu" class="option-group" style="display: none;">
+            <h3>4. 初期メニューを選択してください (5個まで)</h3>
+            <p>選択中: <span id="selected-menu-count">0</span> / 5</p>
+            <div id="menu-selection-area" class="button-list" style="display: flex; flex-wrap: wrap;">
+            </div>
+        </div>
+
+        <div id="step-start" class="option-group" style="text-align: center; margin-top: 30px; display: none;">
+            <button onclick="showConfirmation()" class="action-btn" style="background-color: #4CAF50;">ゲーム開始</button>
+            <button onclick="resetSetup()" class="action-btn">設定をリセット</button>
+        </div>
     </div>
 
-    <div id="sidebar">
-      <h3>情報</h3>
-      <p class="small">高級ゴミ箱: <span id="garbage-can-status">未</span></p>
-      <h4>従業員 (<span id="employee-count">0</span>)</h4>
-      <div id="employee-status"></div>
-      <hr>
-      <h4>操作</h4>
-      <div>
-        注文モード:
-        <label><input type="radio" name="orderMode" value="auto" checked onchange="setOrderMode('auto')"> 自動</label>
-        <label><input type="radio" name="orderMode" value="manual" onchange="setOrderMode('manual')"> 手動</label>
-      </div>
-      <div style="margin-top:8px;">
-        会計モード:
-        <label><input type="radio" name="payMode" value="auto" checked onchange="setPayMode('auto')"> 自動</label>
-        <label><input type="radio" name="payMode" value="manual" onchange="setPayMode('manual')"> 手動</label>
-      </div>
-      <hr>
-      <h4>待機タスク</h4>
-      <p class="small">注文待ち: <span id="wait-order-count">0</span></p>
-      <p class="small">調理待ち: <span id="wait-cook-count">0</span></p>
-      <hr>
-      <h4>待ち客</h4>
-      <div id="waiting-customer-details" class="small"></div>
+    <div id="confirmation-screen" class="screen">
+        <h2>設定確認</h2>
+        <p>以下の設定でゲームを開始します。よろしいですか？</p>
+        <div id="config-summary"></div>
+        <div class="button-list" style="text-align: center;">
+            <button onclick="startGame()" class="action-btn" style="background-color: #4CAF50;">OK (ゲームスタート)</button>
+            <button onclick="showScreen('start-screen')" class="action-btn">戻る</button>
+        </div>
     </div>
-  </div>
+
+    <div id="game-screen" class="screen">
+        <h1>飲食店経営シミュレーション ver1.4（ver1.3統合）</h1>
+
+        <div id="game-ui">
+            <div id="header">
+            <div>
+                <button class="button" onclick="openMenu()">メニュー</button>
+                <button class="button" onclick="openSettings()">設定</button>
+                <button class="button" onclick="openItems()">アイテム</button>
+                <button class="button" onclick="saveGame()">セーブ</button>
+                <button class="button danger" onclick="quitGame()">やめる</button>
+            </div>
+            <div>
+                <span id="day-display">Day 1</span> |
+                <span id="time-display">00:00</span>
+            </div>
+            <div id="status-display">
+                <span id="asset-display">資産: 15,000,000円</span><br>
+                <span id="reputation-display">評判: ★3.0</span>
+            </div>
+            </div>
+
+            <div id="main">
+                <h2>店舗フロア（<span id="store-type-display">—</span> / <span id="store-location-display">—</span>）</h2>
+                <div id="seat-map"></div>
+            </div>
+
+            <div id="sidebar">
+            <h3>情報</h3>
+            <p class="small">高級ゴミ箱: <span id="garbage-can-status">未</span></p>
+            <h4>従業員 (<span id="employee-count">0</span>)</h4>
+            
+            <div id="employee-status"></div>
+            <hr>
+            <h4>操作</h4>
+            <div>
+                注文モード:
+                <label><input type="radio" name="orderMode" value="auto" checked onchange="setOrderMode('auto')"> 自動</label>
+                <label><input type="radio" name="orderMode" value="manual" onchange="setOrderMode('manual')"> 手動</label>
+            </div>
+            <div style="margin-top:8px;">
+                会計モード:
+                <label><input type="radio" name="payMode" value="auto" checked onchange="setPayMode('auto')"> 自動</label>
+                <label><input type="radio" 
+                name="payMode" value="manual" onchange="setPayMode('manual')"> 手動</label>
+            </div>
+            <hr>
+            <h4>待機タスク</h4>
+            <p class="small">注文待ち: <span id="wait-order-count">0</span></p>
+            <p class="small">調理待ち: <span id="wait-cook-count">0</span></p>
+            <hr>
+            <h4>待ち客</h4>
+            <div id="waiting-customer-details" class="small"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="log-terop"></div>
 
-<!-- モーダル: レジ -->
 <div id="register-modal" class="modal">
   <div class="content" style="max-width:560px;">
     <h2>レジ会計</h2>
     <div id="register-display">0</div>
 
-    <!-- 電卓 -->
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:10px 0;">
       <button class="reg-btn" data-v="7">7</button>
       <button class="reg-btn" data-v="8">8</button>
@@ -141,8 +244,28 @@
   </div>
 </div>
 
-<!-- 設定 / メニュー / アイテム モーダル（簡易） -->
-<div id="settings-modal" class="modal"><div class="content"><h2>設定</h2><div id="employee-list-settings"></div><div style="margin-top:8px;"><button class="button" onclick="addEmployee('マスター')">マスター (日給45万)</button><button class="button" onclick="addEmployee('ベテラン')">ベテラン (30万)</button><button class="button" onclick="addEmployee('標準')">標準 (20万)</button><button class="button" onclick="addEmployee('ポンコツ')">ポンコツ (10万)</button></div><div style="text-align:right;margin-top:10px;"><button class="button" onclick="closeModal('settings-modal')">閉じる</button></div></div></div>
+<div id="settings-modal" class="modal"><div class="content"><h2>設定</h2>
+  <div id="employee-list-settings"></div>
+  <div style="margin-top:8px;">
+    <button class="button" onclick="addEmployee('マスター')">マスター (日給45万)</button>
+    <button class="button" onclick="addEmployee('ベテラン')">ベテラン (30万)</button>
+    <button class="button" onclick="addEmployee('標準')">標準 (20万)</button>
+    <button class="button" onclick="addEmployee('ポンコツ')">ポンコツ (10万)</button>
+  </div>
+  <div style="margin-top:16px; border-top: 1px solid #eee; padding-top: 10px;">
+    <h3>席数の変更</h3>
+    <p>現在の席数: <strong id="in-game-seats-display">0</strong> 席</p>
+    <div class="button-list">
+        <button onclick="changeSeatsInGame(-2)">席を減らす</button>
+        <button onclick="changeSeatsInGame(2)">席を増やす</button>
+    </div>
+    <p style="font-size:0.9em;color:#666;margin-top:8px;">
+        上限: 20席。席は偶数である必要があります。<br>
+        減らす場合、削除対象の席に客がいると減らせません。
+    </p>
+  </div>
+  <div style="text-align:right;margin-top:10px;"><button class="button" onclick="closeModal('settings-modal')">閉じる</button></div>
+</div></div>
 
 <div id="menu-modal" class="modal"><div class="content"><h2>メニュー</h2><div id="current-menu-list"></div><div style="text-align:right;margin-top:10px;"><button class="button" onclick="closeModal('menu-modal')">閉じる</button></div></div></div>
 
@@ -152,16 +275,40 @@
 /* --------------------
    データ / 初期値
    -------------------- */
-const MENU_DATA = {
+const MENU_DATA = { // ver1.3のメニューを統合
   FastFood:[
-    {name:"チーズバーガー", basePrice:500, cost:200},
-    {name:"ポテトM", basePrice:300, cost:70}
+    {name:"チーズバーガー", basePrice:500, cost:200, category:"Burger"},
+    {name:"テリヤキバーガー", basePrice:500, cost:220, category:"Burger"},
+    {name:"ハンバーガー", basePrice:500, cost:180, category:"Burger"},
+    {name:"焼肉ライスバーガー", basePrice:500, cost:250, category:"Burger"},
+    {name:"ポテトS", basePrice:200, cost:50, category:"Side"},
+    {name:"ポテトM", basePrice:300, cost:70, category:"Side"},
+    {name:"ポテトL", basePrice:450, cost:90, category:"Side"},
+    {name:"ナゲット", basePrice:300, cost:100, category:"Side"},
+    {name:"ホットコーヒー", basePrice:300, cost:80, category:"Drink"},
+    {name:"いちごシェイク", basePrice:300, cost:90, category:"Shake"},
+    {name:"オレンジジュース", basePrice:300, cost:50, category:"Drink"},
+    {name:"コーラ", basePrice:300, cost:60, category:"Drink"},
   ],
   Restaurant:[
-    {name:"マルゲリータ", basePrice:1200, cost:350}
+    {name:"マルゲリータ", basePrice:1200, cost:350, category:"Pizza"},
+    {name:"チーズピザ", basePrice:1200, cost:300, category:"Pizza"},
+    {name:"ナポリタンパスタ", basePrice:1000, cost:280, category:"Pasta"},
+    {name:"トマトパスタ", basePrice:1000, cost:300, category:"Pasta"},
+    {name:"カルボナーラ", basePrice:1000, cost:320, category:"Pasta"},
+    {name:"パンケーキ", basePrice:900, cost:250, category:"Dessert"},
+    {name:"ハンバーグ", basePrice:1300, cost:400, category:"Main"},
+    {name:"ステーキ", basePrice:1400, cost:500, category:"Main"},
+    {name:"サラダ", basePrice:500, cost:150, category:"Side"},
   ]
 };
 const ITEM_DATA = { GARBAGE_CAN:{name:"高級ゴミ箱", cost:10000, effect:"満足度低下抑制"} };
+const LOCATION_DATA = { // ver1.3から移植
+    '大都市部': { maxSeats: 10, cost: 3000000, desc: "客足が多く、売上を上げやすいが、初期費用が高い。" },
+    '都市部': { maxSeats: 7, cost: 1500000, desc: "バランスの取れた立地で、標準的な経営向き。" },
+    '中都市': { maxSeats: 5, cost: 800000, desc: "客足は少なめだが、初期費用を抑えられる。" },
+    '小都市': { maxSeats: 3, cost: 500000, desc: "客足が少なく、難易度が高い。家賃は非常に安い。" }
+};
 const CUSTOMER_IMAGES = [
   "https://i.ibb.co/2YPFhJ1D/IMG-2529.jpg",
   "https://i.ibb.co/p6DSzpHQ/IMG-2529.jpg",
@@ -169,12 +316,11 @@ const CUSTOMER_IMAGES = [
   "https://i.ibb.co/7tjqbkkX/IMG-2529.jpg",
   "https://i.ibb.co/Xkkr114y/IMG-2529.jpg"
 ];
-
 const SAVE_KEY = "restaurant_v1_4_save";
 const GLOBAL_MAX_SEATS = 20;
 
 /* --------------------
-   クラス定義
+   クラス定義 (ver1.4ベース)
    -------------------- */
 class MenuItem { constructor(name, price, cost){ this.name=name; this.currentPrice=price; this.cost=cost; } }
 class Employee {
@@ -188,44 +334,53 @@ class Employee {
       case "ポンコツ": this.speedMultiplier=0.5; this.dailyCost=100000; break;
       default: this.speedMultiplier=1.0; this.dailyCost=200000;
     }
+    this.currentTask = null; // ver1.4
+    this.taskTimeLeft = 0; // ver1.4
   }
   getProcessTime(base){ return base / this.speedMultiplier; }
 }
 class Customer {
-  constructor(numPeople, orderType, seatId, menuList){
+  constructor(numPeople, orderType, seatId, menuList, game){
     this.id = Math.random().toString(36).slice(2,9);
     this.numPeople = numPeople;
-    this.orderType = orderType; // 'タブレット' or '手動'
+    this.orderType = orderType; 
     this.seatId = seatId;
-    this.status = 'WaitOrder'; // WaitOrder, WaitCook, Eating, Paying, Done
-    this.patience = 60;
-    this.mealTimeLeft = 30;
-    this.image = CUSTOMER_IMAGES[Math.floor(Math.random()*CUSTOMER_IMAGES.length)];
-    if(menuList && menuList.length>0){
-      const idx = Math.floor(Math.random()*menuList.length);
-      this.orderedItem = menuList[idx];
-      this.billAmount = this.numPeople * this.orderedItem.currentPrice;
-      this.totalCost = this.numPeople * this.orderedItem.cost;
+    this.status = 'WaitOrder'; // WaitOrder, WaitCook, Eating, Paying
+    this.mealTimeLeft = 100; // 食事時間（秒）
+    this.patience = 100; // 満足度/待機許容度
+    this.img = CUSTOMER_IMAGES[Math.floor(Math.random() * CUSTOMER_IMAGES.length)];
+    this.game = game; // GameManagerインスタンスへの参照
+
+    if (menuList && menuList.length > 0) {
+        const randomIndex = Math.floor(Math.random() * menuList.length);
+        this.orderedItem = menuList[randomIndex];
+        this.billAmount = this.numPeople * this.orderedItem.currentPrice;
+        this.totalCost = this.numPeople * this.orderedItem.cost;
     } else {
-      this.orderedItem = null;
-      this.billAmount = 0;
-      this.totalCost = 0;
+        this.orderedItem = null;
+        this.billAmount = 0;
+        this.totalCost = 0;
     }
   }
   update(dt){
-    if(this.status === 'Eating'){ this.mealTimeLeft -= dt; if(this.mealTimeLeft <= 0) this.status = 'Paying'; }
-    const baseRate = this.status==='Eating' ? 0.3 : 1.0;
-    const garbageEffect = game.hasGarbageCan ? 0.8 : 1.0;
-    this.patience -= dt * baseRate * garbageEffect;
-    if(this.patience <= 0) this.status = 'Done';
+    if(this.status === 'Eating'){
+      this.mealTimeLeft -= dt;
+      if(this.mealTimeLeft <= 0) this.status = 'Paying';
+    }
+    let baseRate = 1.0; 
+    if(this.status === 'Eating' || this.status === 'Paying') baseRate = 0.3;
+    const garbageCanEffect = this.game.hasGarbageCan ? 0.8 : 1.0;
+    this.patience -= dt * baseRate * garbageCanEffect;
+
+    if(this.patience <= 0){
+      this.status = 'Done'; // 我慢の限界
+      this.game.terop(`${this.id}番の客が怒って帰りました...`);
+    }
   }
 }
-
-/* --------------------
-   GameManager
-   -------------------- */
 class GameManager {
-  constructor(){
+  constructor(){ this.resetGameData(); }
+  resetGameData(){
     this.asset = 15000000;
     this.reputation = 3.0;
     this.day = 1;
@@ -233,6 +388,7 @@ class GameManager {
     this.isPaused = false;
     this.isGameRunning = false;
     this.storeType = null;
+    this.storeLocation = null; 
     this.currentSeats = 0;
     this.seatsData = [];
     this.customers = [];
@@ -243,526 +399,641 @@ class GameManager {
     this.customerSpawnTimer = 0;
     this.customerSpawnInterval = 10;
     this.hasGarbageCan = false;
-    // 設定: 手動/自動
-    this.orderMode = 'auto'; // 'auto' or 'manual'
+    this.orderMode = 'auto'; 
     this.payMode = 'auto';
+    this.waitingCustomers = 0; // ver1.4
+    this.manualRegisterCustomer = null; // ver1.4
   }
-
-  resetGame(){
-    this.asset = 15000000; this.reputation = 3.0; this.day = 1; this.time = 0; this.isPaused=false; this.isGameRunning=false;
-    this.storeType = null; this.currentSeats = 0; this.seatsData=[]; this.customers=[]; this.employees=[]; this.menu=[];
-    this.cookQueue=[]; this.employeeTasks=[]; this.customerSpawnTimer=0; this.customerSpawnInterval=10; this.hasGarbageCan=false;
-  }
-
   initializeGame(settings){
     this.isGameRunning = true;
     this.storeType = settings.type;
+    this.storeLocation = settings.location; 
     this.currentSeats = settings.currentSeats;
     this.menu = settings.initialMenu.map(i=> new MenuItem(i.name, i.basePrice, i.cost));
+    
+    // 従業員の初期設定（初期設定では従業員リストは空なので標準を3人）
+    if(this.employees.length === 0) this.employees = [ new Employee('標準'), new Employee('標準'), new Employee('ベテラン') ];
+    
+    // 席データの設定
     this.seatsData = [];
     for(let i=0;i<this.currentSeats/2;i++) this.seatsData.push({id:i+1,isOccupied:false,numGuests:0,customerId:null});
-    if(this.employees.length === 0) this.employees = [ new Employee('標準'), new Employee('標準'), new Employee('ベテラン') ];
-    this.customers = []; this.cookQueue=[]; this.employeeTasks=[];
+    
+    // 資産の初期費用差し引き
+    this.asset -= settings.initialCost;
+
+    this.customers = [];
+    this.cookQueue=[];
+    this.employeeTasks=[];
+    
+    // UI更新
     document.getElementById('store-type-display').textContent = this.storeType;
+    document.getElementById('store-location-display').textContent = this.storeLocation; 
     this.updateDisplay();
   }
-
+  
+  // --- ゲームロジック (ver1.4の全ての関数を定義) ---
   update(dt){
-    if(this.isPaused) return;
+    if(this.isPaused || !this.isGameRunning) return;
     const GAME_SPEED = 2.0;
     this.time += dt * GAME_SPEED;
     if(this.time >= 600){ this.time = 600; this.endOfDay(); return; }
+
     this.spawnCustomer(dt);
-    this.customers.forEach(c => {
-      c.update(dt);
-      if(c.status === 'Paying'){
-        if(!c._payOpen){
-          c._payOpen = true;
-          // 会計モードによって処理
-          if(this.payMode === 'auto') {
-            // 自動会計: 即時処理
-            this.removeCustomer(c, c.seatId, true);
-            terop(`席${c.seatId}：自動会計処理`);
-          } else {
-            // 手動会計: レジを開く（プレイヤー処理）
-            startCashier(c);
-          }
-        }
-      } else if(c.status === 'Done'){
-        this.removeCustomer(c, c.seatId, false);
-      }
-    });
+    this.updateCustomer(dt);
     this.processEmployeeTasks(dt);
+    this.assignTasks();
     this.updateDisplay();
   }
-
   spawnCustomer(dt){
     this.customerSpawnTimer += dt;
-    if(this.customerSpawnTimer < this.customerSpawnInterval) return;
-    this.customerSpawnTimer = 0;
-    const free = this.seatsData.find(s=>!s.isOccupied);
-    if(!free){ terop('満席：お客様が帰った'); return; }
-    const num = Math.floor(Math.random()*4)+1;
-    const orderType = Math.random() < 0.7 ? 'タブレット' : '手動';
-    const c = new Customer(num, orderType, free.id, this.menu);
-    if(!c.orderedItem){ terop('メニュー未設定で客が帰った'); return; }
-    free.isOccupied = true; free.numGuests = c.numPeople; free.customerId = c.id;
-    this.customers.push(c);
-    terop(`${num}人組（${orderType}）が来店。席${c.seatId}に着席。`);
-    // 注文動作
-    if(orderType === 'タブレット'){
-      c.status = 'WaitCook';
-      this.cookQueue.push({customer:c});
-    } else {
-      c.status = 'WaitOrder';
-      // 手動モードが auto なら自動で受付
-      if(this.orderMode === 'auto'){
-        c.status = 'WaitCook';
-        this.cookQueue.push({customer:c});
-        terop(`席${c.seatId}の手動注文を自動受付しました`);
+    // 席数の1.5倍まで客を呼ぶ (ver1.4)
+    if(this.customerSpawnTimer >= this.customerSpawnInterval && this.customers.length < this.currentSeats * 1.5){
+      this.customerSpawnTimer = 0;
+      const availableSeats = this.seatsData.filter(s=>!s.isOccupied);
+      
+      if(availableSeats.length > 0 && this.waitingCustomers < 3){
+          // 2人掛け席なので、1人か2人で来る (ver1.4)
+          const numPeople = Math.random() < 0.3 ? 1 : 2; 
+          const seat = availableSeats[Math.floor(Math.random() * availableSeats.length)];
+          
+          if(seat.isOccupied) return; // 二重チェック
+
+          seat.isOccupied = true;
+          seat.numGuests = numPeople;
+          
+          const newCustomer = new Customer(numPeople, this.orderMode, seat.id, this.menu, this);
+          this.customers.push(newCustomer);
+          seat.customerId = newCustomer.id;
+          this.terop(`${numPeople}人組のお客様が来店しました`);
+      } else {
+        this.waitingCustomers++; // 席がない場合は待機
       }
     }
-    this.customerSpawnInterval = Math.random()*10 + 5;
   }
-
-  removeCustomer(customer, seatId, paid){
-    const seat = this.seatsData.find(s=>s.id===seatId);
-    if(seat){ seat.isOccupied=false; seat.numGuests=0; seat.customerId=null; }
-    this.customers = this.customers.filter(x=>x!==customer);
-    if(paid){
-      const profit = Math.max(0, customer.billAmount - customer.totalCost);
-      this.asset += profit;
-      terop(`席${seatId} 会計完了。利益 +${profit.toLocaleString()}円`);
-    } else {
-      this.asset -= customer.totalCost;
-      this.reputation = Math.max(1.0, this.reputation - 0.1);
-      terop(`席${seatId} 客が怒って帰った。損失 ${customer.totalCost.toLocaleString()}円`);
-    }
+  updateCustomer(dt){
+    this.customers = this.customers.filter(c=>{
+      c.update(dt);
+      if(c.status === 'Done'){ // 我慢の限界で帰宅
+        this.removeCustomer(c.id, true);
+        this.reputation = Math.max(1.0, this.reputation - 0.2); // 評判低下
+        return false;
+      }
+      if(c.status === 'Paying' && this.payMode === 'auto'){
+          // 自動会計処理 (ver1.4)
+          this.asset += c.billAmount;
+          this.terop(`${c.billAmount.toLocaleString()}円 自動会計完了`);
+          this.removeCustomer(c.id);
+          return false;
+      }
+      return true;
+    });
   }
-
   processEmployeeTasks(dt){
-    this.employees.forEach(emp => {
-      let task = this.employeeTasks.find(t=>t.employee === emp);
-      if(task){
-        task.timeLeft -= dt;
-        if(task.timeLeft <= 0){
-          this.completeTask(task);
-          this.employeeTasks = this.employeeTasks.filter(t=>t !== task);
-          task = null;
-        }
-      }
-      if(!task){
-        // 優先: 手動注文受付
-        const manual = this.customers.find(c=>c.status === 'WaitOrder' && c.orderType === '手動');
-        if(manual && this.orderMode === 'auto'){
-          // すで handled earlier; skip
-        }
-        if(manual && this.orderMode === 'manual'){
-          // 従業員は注文受付ができるが、プレイヤーが確認ボタンで入れる仕様のため
-          // ここはプレイヤー優先で待機する（従業員が勝手にとらない）
-        }
-        // 次に調理
-        if(this.cookQueue.length > 0){
-          const item = this.cookQueue.shift();
-          const t = { employee:emp, taskType:'cooking', target: item.customer, timeLeft: emp.getProcessTime(15) };
-          this.employeeTasks.push(t);
-          // set status to indicate cooking in progress to avoid duplicates
+    this.employees.forEach(e=>{
+      if(e.currentTask){
+        e.taskTimeLeft -= dt;
+        if(e.taskTimeLeft <= 0){
+          this.completeTask(e);
+          e.currentTask = null;
         }
       }
     });
   }
+  assignTasks(){
+    if(!this.isGameRunning) return;
+    
+    const availableEmployees = this.employees.filter(e=>!e.currentTask);
+    if(availableEmployees.length === 0) return;
 
-  completeTask(task){
-    const customer = task.target;
-    if(task.taskType === 'order_taking'){
-      this.cookQueue.push({customer:customer});
-      terop(`注文受付完了：席${customer.seatId}の注文を調理キューへ`);
-    } else if(task.taskType === 'cooking'){
+    // 1. 注文タスク (WaitOrder)
+    const orderCustomers = this.customers.filter(c=>c.status === 'WaitOrder');
+    orderCustomers.forEach(c=>{
+      if(this.employeeTasks.some(t=>t.type==='Order' && t.customerId === c.id)) return;
+      this.employeeTasks.push({type:'Order', customerId:c.id, duration: new Employee('標準').getProcessTime(3)});
+    });
+    // 2. 配膳タスク (CookQueueにあるもの)
+    this.cookQueue.forEach(q=>{
+      if(this.employeeTasks.some(t=>t.type==='Serve' && t.customerId === q.customerId)) return;
+      this.employeeTasks.push({type:'Serve', customerId:q.customerId, duration: new Employee('standard').getProcessTime(5)});
+    });
+    // 3. 片付けタスク (Doneステータスだが席にいる)
+    this.seatsData.forEach(s=>{
+      const customer = this.customers.find(c=>c.id === s.customerId);
+      if(customer && customer.status === 'Done'){
+        if(this.employeeTasks.some(t=>t.type==='Clean' && t.seatId === s.id)) return;
+        this.employeeTasks.push({type:'Clean', seatId:s.id, duration: new Employee('standard').getProcessTime(10)});
+      }
+    });
+
+    // タスクを従業員に割り当て
+    this.employeeTasks.forEach(task=>{
+      const employee = availableEmployees.shift();
+      if(employee){
+        employee.currentTask = task;
+        employee.taskTimeLeft = task.duration;
+        this.employeeTasks = this.employeeTasks.filter(t=>t!==task);
+      }
+    });
+  }
+  completeTask(employee){
+    const task = employee.currentTask;
+    const customer = this.customers.find(c=>c.id === task.customerId);
+    const seat = this.seatsData.find(s=>s.id === task.seatId);
+
+    if(task.type === 'Order' && customer){
+      customer.status = 'WaitCook';
+      this.cookQueue.push({customerId:customer.id, item:customer.orderedItem, duration:50}); // 調理待ちキューへ
+      this.terop(`${customer.id}番の注文完了: ${customer.orderedItem.name}`);
+    } else if(task.type === 'Serve' && customer){
+      // cookQueueから削除
+      this.cookQueue = this.cookQueue.filter(q=>q.customerId !== customer.id);
       customer.status = 'Eating';
-      terop(`調理完了：席${customer.seatId}へ提供開始`);
+      this.terop(`${customer.id}番に配膳完了。食事開始`);
+    } else if(task.type === 'Clean' && seat){
+      seat.isOccupied = false;
+      seat.numGuests = 0;
+      seat.customerId = null;
+      this.terop(`${seat.id}番テーブルを片付けました`);
+      // 待ち客がいれば案内
+      if(this.waitingCustomers > 0){
+          this.waitingCustomers--;
+          this.terop(`待ち客を${seat.id}番テーブルに案内しました`);
+          const numPeople = Math.random() < 0.3 ? 1 : 2; 
+          seat.isOccupied = true;
+          seat.numGuests = numPeople;
+          const newCustomer = new Customer(numPeople, this.orderMode, seat.id, this.menu, this);
+          this.customers.push(newCustomer);
+          seat.customerId = newCustomer.id;
+      }
     }
   }
-
-  updateDisplay(){
-    document.getElementById('asset-display').textContent = `資産: ${this.asset.toLocaleString()}円`;
-    document.getElementById('reputation-display').textContent = `評判: ★${this.reputation.toFixed(1)}`;
-    const minutes = Math.floor(this.time/60);
-    const seconds = Math.floor(this.time%60);
-    document.getElementById('time-display').textContent = `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
-    document.getElementById('day-display').textContent = `Day ${this.day}`;
-
-    // 席の描画
-    const seatMap = document.getElementById('seat-map');
-    seatMap.innerHTML = this.seatsData.map(seat=>{
-      let cls = 'seat-empty';
-      let inner = `<div>席 ${seat.id}</div>`;
-      if(seat.isOccupied){
-        const c = this.customers.find(x=>x.id === seat.customerId);
-        if(c){
-          if(c.status === 'Eating' || c.status === 'Paying') cls = 'seat-eat';
-          else cls = 'seat-wait';
-          inner += `<img src="${c.image}" class="customer-img" alt="客">`;
-          inner += `<div class="small">${c.orderedItem ? c.orderedItem.name : '-'} x ${c.numPeople}</div>`;
-          // 吹き出し（状態に応じた会話）
-          if(c.status === 'WaitOrder'){
-            inner += `<div class="speech">注文待ち</div>`;
-          } else if(c.status === 'Paying'){
-            inner += `<div class="speech">会計お願いします: ${c.billAmount.toLocaleString()}円</div>`;
-          } else if(c.status === 'Eating'){
-            inner += `<div class="speech">食事中</div>`;
-          }
-        }
-      }
-      return `<div class="seat ${cls}" data-seat="${seat.id}">${inner}</div>`;
-    }).join('');
-
-    document.getElementById('garbage-can-status').textContent = this.hasGarbageCan ? '購入済' : '未';
-    document.getElementById('employee-count').textContent = this.employees.length || 0;
-    document.getElementById('wait-order-count').textContent = this.customers.filter(c=>c.status==='WaitOrder' && c.orderType==='手動').length;
-    document.getElementById('wait-cook-count').textContent = this.cookQueue.length;
-
-    // 従業員リスト
-    document.getElementById('employee-status').innerHTML = this.employees.map(e=>{
-      const t = this.employeeTasks.find(tt=>tt.employee===e);
-      const desc = t ? (t.taskType==='cooking' ? `調理中 (${t.timeLeft.toFixed(1)}s)` : `注文受付中 (${t.timeLeft.toFixed(1)}s)`) : '待機中';
-      return `<div class="small"><strong>${e.grade}</strong> (${e.dailyCost.toLocaleString()}円) — ${desc}</div>`;
-    }).join('');
-
-    // 待ち客詳細（サイド）
-    const waiting = document.getElementById('waiting-customer-details');
-    waiting.innerHTML = '';
-    const waitList = this.customers.filter(c => c.status !== 'Eating' && c.status !== 'Paying');
-    if(waitList.length === 0) waiting.innerHTML = '<div class="small">待ち客なし</div>';
-    waitList.forEach(c=>{
-      const statusText = c.status === 'WaitOrder' ? '注文待ち' : (c.status === 'WaitCook' ? '調理待ち' : c.status);
-      waiting.innerHTML += `<div style="border-bottom:1px dashed #eee;padding:6px 0;">
-        <img src="${c.image}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:8px;">
-        席${c.seatId} (${c.numPeople}人) — ${statusText}<br>
-        <span class="small">品: ${c.orderedItem ? c.orderedItem.name : '-'} (${c.billAmount.toLocaleString()}円)</span>
-        ${c.orderType==='手動' && c.status==='WaitOrder' ? `<br><button class="button" onclick="playerConfirmOrder('${c.id}')">注文を確認してキューに登録</button>` : ''}
-      </div>`;
-    });
-  }
-
   endOfDay(){
     this.isPaused = true;
-    terop('営業終了');
-    const totalPay = this.employees.reduce((s,e)=>s+e.dailyCost, 0);
-    this.asset -= totalPay;
-    setTimeout(()=>{
-      alert(`Day ${this.day} 終了。給与合計: ${totalPay.toLocaleString()}円`);
-      this.day++;
-      this.time = 0;
-      this.isPaused = false;
-      this.customers = [];
-      this.cookQueue = [];
-      this.employeeTasks = [];
-      this.customerSpawnTimer = 0;
-      if(this.isGameRunning) gameLoop(0);
-    }, 500);
-  }
+    this.terop(`Day ${this.day} 終了。お疲れ様でした！`, 5000);
+    
+    // 従業員への給与支払い
+    const totalSalary = this.employees.reduce((sum, e) => sum + e.dailyCost, 0);
+    this.asset -= totalSalary;
+    this.terop(`従業員給与 ${totalSalary.toLocaleString()}円 を支払いました。`);
 
+    this.day++;
+    this.time = 0;
+    this.customers = []; // 全員帰宅
+
+    // 翌日開始
+    setTimeout(() => {
+        this.isPaused = false;
+        this.terop(`Day ${this.day} スタート`);
+        if(gameLoopRef) cancelAnimationFrame(gameLoopRef);
+        gameLoop(0);
+    }, 5000);
+  }
+  removeCustomer(customerId, isAngry = false){
+      const customer = this.customers.find(c => c.id === customerId);
+      if (customer) {
+          const seat = this.seatsData.find(s => s.customerId === customerId);
+          if (seat) {
+              // 怒って帰った場合は片付けタスクに移行 (Cleanタスク)
+              if(isAngry) {
+                  seat.isOccupied = true; // 仮に占有状態を維持してCleanタスク待ちに
+                  seat.customerId = customerId; // IDは保持
+                  // Doneステータスに設定してCleanタスクに拾わせる
+                  customer.status = 'Done'; 
+                  this.terop(`${seat.id}番の客が怒って帰った。片付けが必要です。`);
+                  this.customers = this.customers.filter(c=>c.id !== customerId); // 顧客リストから一旦削除
+                  return; 
+              } else {
+                  // 通常の退店（自動会計など）
+                  seat.isOccupied = false;
+                  seat.numGuests = 0;
+                  seat.customerId = null;
+                  // 待ち客がいれば案内
+                  if (this.waitingCustomers > 0) {
+                      this.waitingCustomers--;
+                      this.terop(`待ち客を${seat.id}番テーブルに案内しました`);
+                      const numPeople = Math.random() < 0.3 ? 1 : 2; 
+                      seat.isOccupied = true;
+                      seat.numGuests = numPeople;
+                      const newCustomer = new Customer(numPeople, this.orderMode, seat.id, this.menu, this);
+                      this.customers.push(newCustomer);
+                      seat.customerId = newCustomer.id;
+                  }
+              }
+          }
+      }
+      this.customers = this.customers.filter(c=>c.id !== customerId);
+      this.updateDisplay();
+  }
+  setOrderMode(mode){ this.orderMode = mode; this.terop(`注文モードを${mode === 'auto' ? '自動' : '手動'}に設定`); }
+  setPayMode(mode){ this.payMode = mode; this.terop(`会計モードを${mode === 'auto' ? '自動' : '手動'}に設定`); }
+  
+  changeSeatsInGame(diff) { // ver1.3の関数をGameManagerに統合
+      const newSeatCount = this.currentSeats + diff;
+      const GLOBAL_MAX_SEATS = 20;
+
+      if (newSeatCount < 2 || newSeatCount > GLOBAL_MAX_SEATS || newSeatCount % 2 !== 0) {
+          this.terop(`席数は2～${GLOBAL_MAX_SEATS}の偶数で指定してください。`);
+          return false;
+      }
+      
+      const newTableCount = newSeatCount / 2;
+      const oldTableCount = this.seatsData.length;
+
+      if (newTableCount < oldTableCount) {
+          // 削除（空のテーブルのみ）
+          for (let i = oldTableCount - 1; i >= newTableCount; i--) {
+              if (this.seatsData[i].isOccupied) {
+                  this.terop('減らせません：削除対象のテーブルに客がいます。');
+                  return false;
+              }
+              this.seatsData.pop(); 
+          }
+          this.currentSeats = newSeatCount;
+          this.terop(`${newSeatCount}席に減席しました。`);
+      } else if (newTableCount > oldTableCount) {
+          // 追加
+          for (let i = oldTableCount; i < newTableCount; i++) {
+              this.seatsData.push({ id: i + 1, isOccupied: false, numGuests: 0, customerId: null });
+          }
+          this.currentSeats = newSeatCount;
+          this.terop(`${newSeatCount}席に増員しました。`);
+      }
+      this.updateDisplay();
+      return true;
+  }
+  
+  updateDisplay(){
+    document.getElementById('day-display').textContent = `Day ${this.day}`;
+    const minutes = Math.floor(this.time * 60 / 100).toString().padStart(2, '0');
+    const seconds = Math.floor(this.time * 60 % 100).toString().padStart(2, '0');
+    document.getElementById('time-display').textContent = `11:${minutes}`; // 11時スタートで固定
+    document.getElementById('asset-display').textContent = `資産: ${this.asset.toLocaleString()}円`;
+    document.getElementById('reputation-display').textContent = `評判: ★${this.reputation.toFixed(1)}`;
+    document.getElementById('employee-count').textContent = this.employees.length;
+    document.getElementById('garbage-can-status').textContent = this.hasGarbageCan ? '✅' : '未';
+    document.getElementById('wait-order-count').textContent = this.customers.filter(c=>c.status === 'WaitOrder').length;
+    document.getElementById('wait-cook-count').textContent = this.cookQueue.length;
+    document.getElementById('in-game-seats-display').textContent = this.currentSeats;
+
+    // 席マップの更新
+    const seatMapEl = document.getElementById('seat-map');
+    seatMapEl.innerHTML = '';
+    this.seatsData.forEach(s=>{
+      const customer = this.customers.find(c=>c.id === s.customerId);
+      let statusClass = 'seat-empty';
+      let content = '空席';
+      if(s.isOccupied && customer){
+        if(customer.status === 'WaitOrder') statusClass = 'seat-wait';
+        else if(customer.status === 'WaitCook') statusClass = 'seat-wait';
+        else if(customer.status === 'Eating') statusClass = 'seat-eat';
+        else if(customer.status === 'Paying') statusClass = 'seat-eat';
+
+        let actionButton = '';
+        if(customer.status === 'WaitOrder' && this.orderMode === 'manual'){
+          actionButton = `<button class="button" onclick="takeOrder('${customer.id}')">注文を取る</button>`;
+        } else if(customer.status === 'Paying' && this.payMode === 'manual'){
+          actionButton = `<button class="button" onclick="openRegister('${customer.id}')">会計する</button>`;
+        }
+        
+        content = `
+          <img src="${customer.img}" class="customer-img" alt="客">
+          <p>${s.numGuests}人組 (${customer.status})</p>
+          <p class="small">Patience: ${customer.patience.toFixed(0)}%</p>
+          ${customer.orderedItem ? `<p class="small">注文: ${customer.orderedItem.name}</p>` : ''}
+          ${actionButton}
+        `;
+      } else if (s.isOccupied && !customer) {
+        // 片付け待ちの席
+        statusClass = 'seat-empty'; 
+        content = '片付け待ち';
+      }
+      
+      const seatEl = document.createElement('div');
+      seatEl.className = `seat ${statusClass}`;
+      seatEl.innerHTML = `<h4>T${s.id}</h4>${content}`;
+      seatMapEl.appendChild(seatEl);
+    });
+
+    // 従業員ステータス
+    updateEmployeeUI();
+
+    // 待ち客表示
+    document.getElementById('waiting-customer-details').textContent = `現在 ${this.waitingCustomers} 組の客が待っています。`;
+  }
+  terop(message, duration = 3000){ // ver1.4
+    const el = document.getElementById('log-terop');
+    el.textContent = message;
+    el.style.opacity = 1;
+    setTimeout(() => { el.style.opacity = 0; }, duration);
+  }
+  
+  // セーブ/ロード
   getGameData(){
     return {
-      asset:this.asset, reputation:this.reputation, day:this.day,
+      asset:this.asset, reputation:this.reputation, day:this.day, time:this.time,
+      isGameRunning:this.isGameRunning, hasGarbageCan:this.hasGarbageCan,
+      storeType:this.storeType, storeLocation:this.storeLocation, 
+      currentSeats:this.currentSeats, seatsData:this.seatsData,
       employees: this.employees.map(e=>({id:e.id, grade:e.grade})),
       menu: this.menu.map(m=>({name:m.name,currentPrice:m.currentPrice,cost:m.cost})),
-      settings: { type: this.storeType, currentSeats: this.currentSeats },
-      hasGarbageCan: this.hasGarbageCan,
-      currentSeats: this.currentSeats,
-      seatsData: this.seatsData
+      orderMode: this.orderMode, payMode: this.payMode,
+      settings: { type: this.storeType, currentSeats: this.currentSeats }, 
     };
   }
-}
+  loadGameData(d){
+    this.resetGameData();
+    this.asset = d.asset || this.asset;
+    this.reputation = d.reputation || this.reputation;
+    this.day = d.day || this.day;
+    this.time = d.time || this.time;
+    this.isGameRunning = d.isGameRunning || false;
+    this.hasGarbageCan = d.hasGarbageCan || false;
+    this.orderMode = d.orderMode || 'auto';
+    this.payMode = d.payMode || 'auto';
 
+    this.storeType = d.storeType || d.settings?.type || null;
+    this.storeLocation = d.storeLocation || null; 
+
+    this.currentSeats = d.currentSeats || 4; 
+    this.seatsData = d.seatsData || []; 
+    if(this.seatsData.length === 0 && this.currentSeats > 0) {
+        for(let i=0;i<this.currentSeats/2;i++) this.seatsData.push({id:i+1,isOccupied:false,numGuests:0,customerId:null});
+    }
+
+    this.employees = (d.employees || []).map(e => new Employee(e.grade, e.id));
+    this.menu = (d.menu || []).map(m=> new MenuItem(m.name, m.currentPrice, m.cost));
+    
+    document.getElementById('store-type-display').textContent = this.storeType || '—';
+    document.getElementById('store-location-display').textContent = this.storeLocation || '—';
+    this.updateDisplay();
+
+    this.isPaused = false;
+    showScreen('game-screen');
+    if(gameLoopRef) cancelAnimationFrame(gameLoopRef);
+    gameLoop(0);
+    this.terop('ゲームデータをロードしました');
+  }
+}
 /* --------------------
-   インスタンス / グローバル
+   インスタンス / グローバル (ver1.3 / ver1.4統合)
    -------------------- */
 const game = new GameManager();
 let gameLoopRef = null;
-let currentSettings = { type:'FastFood', currentSeats:4, initialMenu: MENU_DATA['FastFood'].slice(0,2) };
+let currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] };
+let isRegistering = false;
+let registerInput = '0';
+let currentBill = 0;
+let moneyGiven = 0;
+let regCustomer;
 
 /* --------------------
-   UI / 操作関数
+   UI / 画面遷移関数 (ver1.3から移植・修正)
    -------------------- */
-function openMenu(){ showModal('menu-modal'); updateMenuUI(); }
-function openSettings(){ showModal('settings-modal'); updateEmployeeUI(); }
-function openItems(){ showModal('item-modal'); updateItemUI(); }
-
-function showModal(id){ document.getElementById(id).style.display='flex'; game.isPaused = true; }
-function closeModal(id){ document.getElementById(id).style.display='none'; game.isPaused = false; if(game.isGameRunning) gameLoop(0); }
-
-function startGame(){
-  game.resetGame();
-  game.initializeGame(currentSettings);
-  game.asset -= 0; // 初期差し引きなどあれば
-  game.isGameRunning = true;
-  showInGame();
-  terop('ゲーム開始');
-  showWarningOnExit();
-  if(gameLoopRef) cancelAnimationFrame(gameLoopRef);
-  gameLoop(0);
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    game.isPaused = (id !== 'game-screen');
+    if (id === 'game-screen' && game.isGameRunning) {
+      if(gameLoopRef) cancelAnimationFrame(gameLoopRef);
+      gameLoop(0); 
+    }
 }
-function showInGame(){ document.getElementById('store-type-display').textContent = currentSettings.type; document.getElementById('game-container').scrollIntoView(); showModalCloseIfAny(); document.getElementById('asset-display').textContent = `資産: ${game.asset.toLocaleString()}円`; }
 
-function showModalCloseIfAny(){ /* nothing */ }
+function updateInitialCost() { // ver1.3から移植
+    const locationData = LOCATION_DATA[currentSettings.location];
+    const locationCost = locationData ? locationData.cost : 0;
+    
+    const seatCost = (currentSettings.currentSeats / 2) * 500000;
+    currentSettings.initialCost = locationCost + seatCost;
 
+    document.getElementById('current-seats').textContent = currentSettings.currentSeats;
+    document.getElementById('current-tables').textContent = currentSettings.currentSeats / 2;
+    document.getElementById('initial-cost').textContent = currentSettings.initialCost.toLocaleString();
+}
+
+function selectType(type) { // ver1.3から移植
+    currentSettings.type = type;
+    document.getElementById('type-info').textContent = `選択: ${type === 'FastFood' ? 'ファーストフード' : 'レストラン'}`;
+    document.querySelectorAll('#step-type button').forEach(btn => {
+        btn.style.backgroundColor = btn.dataset.type === type ? '#4CAF50' : '#2196F3';
+    });
+    document.getElementById('step-location').style.display = 'block';
+    currentSettings.initialMenu = [];
+    document.getElementById('selected-menu-count').textContent = 0;
+    document.getElementById('menu-selection-area').innerHTML = '';
+}
+
+function selectLocation(location) { // ver1.3から移植
+    const data = LOCATION_DATA[location];
+    currentSettings.location = location;
+    currentSettings.maxSeats = data.maxSeats;
+    currentSettings.currentSeats = 2; 
+    currentSettings.initialCost = data.cost;
+
+    document.getElementById('location-info').textContent = `選択: ${location} - ${data.desc}`;
+    document.getElementById('max-seats').textContent = data.maxSeats;
+
+    document.querySelectorAll('#step-location button').forEach(btn => {
+        btn.style.backgroundColor = btn.dataset.loc === location ? '#4CAF50' : '#2196F3';
+    });
+
+    updateInitialCost();
+    document.getElementById('step-size').style.display = 'block';
+    document.getElementById('step-menu').style.display = 'block';
+    document.getElementById('step-start').style.display = 'block';
+    
+    displayInitialMenuOptions();
+}
+
+function changeSeats(diff) { // ver1.3から移植
+    const newSeats = currentSettings.currentSeats + diff;
+    
+    if (newSeats < 2 || newSeats > GLOBAL_MAX_SEATS || newSeats > currentSettings.maxSeats || newSeats % 2 !== 0) {
+        let msg = '';
+        if (newSeats < 2) msg = '席数は最低2席必要です。';
+        else if (newSeats > GLOBAL_MAX_SEATS) msg = `席数は全体で${GLOBAL_MAX_SEATS}席が上限です。`;
+        else if (newSeats > currentSettings.maxSeats) msg = `この場所では${currentSettings.maxSeats}席までしか設置できません。`;
+        else if (newSeats % 2 !== 0) msg = '席数は2人掛けテーブルのため偶数である必要があります。';
+        game.terop(msg);
+        return;
+    }
+    
+    currentSettings.currentSeats = newSeats;
+    updateInitialCost();
+}
+
+function displayInitialMenuOptions() { // ver1.3から移植
+    const menuArea = document.getElementById('menu-selection-area');
+    menuArea.innerHTML = '';
+    const menuItems = MENU_DATA[currentSettings.type];
+    if (!menuItems) return;
+    
+    menuItems.forEach(item => {
+        const button = document.createElement('button');
+        button.textContent = `${item.name} (${item.basePrice.toLocaleString()}円)`;
+        button.dataset.name = item.name;
+        button.onclick = () => toggleMenuSelection(item, button);
+        menuArea.appendChild(button);
+    });
+}
+
+function toggleMenuSelection(item, button) { // ver1.3から移植
+    const name = item.name;
+    const index = currentSettings.initialMenu.findIndex(m => m.name === name);
+    
+    if (index === -1) {
+        if (currentSettings.initialMenu.length < 5) {
+            currentSettings.initialMenu.push(item);
+            button.classList.add('selected');
+        } else {
+            game.terop('初期メニューは5個までしか選択できません。');
+            return;
+        }
+    } else {
+        currentSettings.initialMenu.splice(index, 1);
+        button.classList.remove('selected');
+    }
+    document.getElementById('selected-menu-count').textContent = currentSettings.initialMenu.length;
+}
+
+function showConfirmation() { // ver1.3から移植
+    if (!currentSettings.type || !currentSettings.location || currentSettings.currentSeats === 0 || currentSettings.initialMenu.length === 0) {
+        game.terop('設定項目が不足しています。全て選択してください。');
+        return;
+    }
+
+    const summary = `
+        <p><strong>店タイプ:</strong> ${currentSettings.type}</p>
+        <p><strong>場所:</strong> ${currentSettings.location}</p>
+        <p><strong>席数:</strong> ${currentSettings.currentSeats} 席</p>
+        <p><strong>初期費用:</strong> ${currentSettings.initialCost.toLocaleString()} 円</p>
+        <p><strong>初期資産残高:</strong> ${(game.asset - currentSettings.initialCost).toLocaleString()} 円</p>
+        <p><strong>初期メニュー:</strong> ${currentSettings.initialMenu.map(m => m.name).join('、')}</p>
+    `;
+    document.getElementById('config-summary').innerHTML = summary;
+    showScreen('confirmation-screen');
+}
+
+function resetSetup() { // ver1.3から移植
+    currentSettings = { type: null, location: null, maxSeats: 0, currentSeats: 0, initialCost: 0, initialMenu: [] };
+    showScreen('home-screen');
+    game.terop('設定をリセットしました。');
+}
+
+function startGame(){ // ver1.4のstartGameを、設定情報を使うように修正
+    game.resetGameData();
+    game.initializeGame(currentSettings);
+    game.isGameRunning = true;
+    showScreen('game-screen');
+    game.terop('ゲーム開始');
+    if(gameLoopRef) cancelAnimationFrame(gameLoopRef);
+    gameLoop(0); 
+}
+
+function quitGame(){ // ver1.4のquitGameを、ホーム画面に戻るように修正
+    if(confirm('ゲームを終了しますか？セーブしていないデータは失われます。')){
+        game.isGameRunning = false;
+        if(gameLoopRef) cancelAnimationFrame(gameLoopRef);
+        showScreen('home-screen');
+        game.terop('ゲームを終了しました。');
+    }
+}
+
+function loadGameFromHome() { // ver1.3から移植
+    const savedDataString = localStorage.getItem(SAVE_KEY);
+    if (savedDataString) {
+        try {
+            const savedData = JSON.parse(savedDataString);
+            if(savedData.data) {
+                // ロード後の startGame() に相当する処理を game.loadGameData(savedData.data) で行う
+                game.loadGameData(savedData.data);
+                return;
+            }
+        } catch (e) {
+            game.terop('セーブデータが破損しています。新規ゲームを開始してください。');
+        }
+    }
+    game.terop('セーブデータが見つかりません。新規ゲームを開始します。');
+    showScreen('start-screen');
+}
+
+function checkSavedGame() { // ver1.3から移植
+    const savedDataString = localStorage.getItem(SAVE_KEY);
+    const loadBtn = document.querySelector('#home-screen button:nth-child(2)');
+
+    if (savedDataString) {
+        loadBtn.disabled = false;
+    } else {
+        loadBtn.disabled = true;
+    }
+}
+
+function toggleMobileMode() { // ver1.3から移植
+    const isMobile = document.getElementById('body-container').classList.toggle('mobile-mode');
+    const btn = document.getElementById('mobile-toggle-btn');
+    btn.textContent = isMobile ? 'PCモード' : 'スマホモード';
+    game.terop(isMobile ? 'スマホモードに切り替えました' : 'PCモードに戻しました');
+}
+
+/* --------------------
+   ゲームループ / モーダル / その他の補助関数 (ver1.4ベース)
+   -------------------- */
+let lastTime = 0;
 function gameLoop(ts){
-  const last = gameLoop.lastTime || ts;
-  const dt = (ts - last)/1000;
-  gameLoop.lastTime = ts;
-  game.update(Math.max(0, dt));
-  if(game.isGameRunning && !game.isPaused) gameLoopRef = requestAnimationFrame(gameLoop);
+  const dt = (ts - lastTime) / 1000;
+  lastTime = ts;
+  if(!game.isPaused && game.isGameRunning) game.update(dt);
+  gameLoopRef = requestAnimationFrame(gameLoop);
 }
 
-/* --------------------
-   従業員操作
-   -------------------- */
+function saveGame(){
+    const data = game.getGameData();
+    const saveObject = { data: data, saveTime: new Date().toLocaleString() };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(saveObject));
+    game.terop('ゲームをセーブしました。');
+    checkSavedGame(); // ホーム画面に戻った時のために更新
+}
+
+function showModal(id){
+  document.getElementById(id).style.display = 'flex';
+  game.isPaused = true;
+}
+function closeModal(id){
+  document.getElementById(id).style.display = 'none';
+  if(id !== 'register-modal') game.isPaused = false;
+  if(game.isGameRunning) gameLoop(0); 
+}
+
+// 従業員
 function updateEmployeeUI(){
-  const el = document.getElementById('employee-list-settings');
-  el.innerHTML = '';
-  game.employees.forEach(e=>{
-    el.innerHTML += `<div style="margin-bottom:6px;">${e.grade} — 日給:${e.dailyCost.toLocaleString()}円 <button class="button" onclick="fireEmployee('${e.id}')">解雇</button></div>`;
-  });
+    const el = document.getElementById('employee-status');
+    const settingsEl = document.getElementById('employee-list-settings');
+    el.innerHTML = '';
+    settingsEl.innerHTML = '';
+
+    game.employees.forEach(e=>{
+        const task = e.currentTask ? `${e.currentTask.type}` : '待機中';
+        el.innerHTML += `<p class="small">${e.grade}: ${task}</p>`;
+        settingsEl.innerHTML += `<div style="margin-bottom:4px;">${e.grade} / ${task} <button class="button danger" style="padding:4px 8px; margin-left:8px;" onclick="removeEmployee('${e.id}')">解雇</button></div>`;
+    });
 }
 function addEmployee(grade){
-  game.employees.push(new Employee(grade));
-  updateEmployeeUI();
-  terop(`${grade}を雇用`);
+    const newEmployee = new Employee(grade);
+    game.employees.push(newEmployee);
+    game.terop(`${grade}の従業員を雇いました。`);
+    updateEmployeeUI();
 }
-function fireEmployee(id){
-  game.employees = game.employees.filter(e=>e.id!==id);
-  updateEmployeeUI();
-  terop('従業員を解雇');
-}
-
-/* --------------------
-   注文：プレイヤーが確認してキュー登録（手動注文）
-   -------------------- */
-function playerConfirmOrder(customerId){
-  const c = game.customers.find(x=>x.id===customerId);
-  if(!c) return;
-  c.status = 'WaitCook';
-  game.cookQueue.push({customer:c});
-  terop(`プレイヤーが席${c.seatId}の注文を確認してキューに登録した`);
+function removeEmployee(id){
+    if(game.employees.length <= 1) { game.terop('従業員は最低1人必要です。'); return; }
+    game.employees = game.employees.filter(e=>e.id !== id);
+    game.terop('従業員を解雇しました。');
+    updateEmployeeUI();
 }
 
-/* --------------------
-   会計（レジ）フロー
-   -------------------- */
-let currentCashierCustomer = null;
-
-function startCashier(customer){
-  currentCashierCustomer = customer;
-  // レジモーダルを開く
-  showModal('register-modal');
-  // 客の出すお金を生成して customer-money に表示
-  const paid = generateCustomerPayment(customer.billAmount);
-  customer._paidAmount = paid;
-  const custMoney = document.getElementById('customer-money');
-  custMoney.innerHTML = '';
-  const arr = toCoinArray(paid);
-  arr.forEach(v=>{
-    const d = document.createElement('div');
-    d.className = 'draggable-coin cust-coin';
-    d.draggable = true;
-    d.dataset.value = v;
-    d.textContent = v + "円";
-    custMoney.appendChild(d);
-  });
-  // クリアプレイヤー挿入欄
-  document.getElementById('player-insert').innerHTML = 'ここにドラッグ';
-  document.getElementById('change-zone').innerHTML = '';
-  document.getElementById('customer-receive').innerHTML = '';
-  document.getElementById('register-display').textContent = '0';
-  terop(`会計: 席${customer.seatId} 合計 ${customer.billAmount}円。客が渡す金額 ${paid}円`);
-}
-
-function generateCustomerPayment(amount){
-  const opts = [amount, amount + 100, amount + 500, amount + 1000, amount + 2000];
-  return opts[Math.floor(Math.random()*opts.length)];
-}
-function toCoinArray(amount){
-  const coins = [10000,5000,1000,500,100,50,10,5,1];
-  const res = [];
-  let rem = amount;
-  for(const c of coins){
-    while(rem >= c){ res.push(c); rem -= c; }
-  }
-  return res;
-}
-
-/* ドラッグ&ドロップ（基本） */
-let dragElem = null;
-document.addEventListener('dragstart', e=>{
-  if(e.target && e.target.dataset && e.target.dataset.value){
-    dragElem = e.target;
-  }
-});
-document.addEventListener('dragover', e=>{
-  const zone = e.target.closest('.zone');
-  if(zone) e.preventDefault();
-});
-document.addEventListener('drop', e=>{
-  e.preventDefault();
-  if(!dragElem) return;
-  const zone = e.target.closest('.zone');
-  if(!zone) return;
-
-  // player-insert には客のコイン（cust-coin）を入れる動作のみ許可
-  if(zone.id === 'player-insert'){
-    if(dragElem.classList.contains('cust-coin')){
-      zone.appendChild(dragElem);
-      updateRegisterDisplay();
-      checkForChange();
-    }
-  } else if(zone.id === 'change-zone'){
-    // change-zone には自動生成されたお釣りコインが追加されることを想定（ユーザーがドラッグしてもOK）
-    zone.appendChild(dragElem);
-  } else if(zone.id === 'customer-receive'){
-    // プレイヤーが change-zone -> customer-receive に渡す
-    zone.appendChild(dragElem);
-    checkChangeDelivered();
-  } else if(zone.id === 'customer-money'){
-    // 何もしない（元に戻す）
-    zone.appendChild(dragElem);
-    updateRegisterDisplay();
-  }
-});
-
-/* 電卓ボタン */
-document.addEventListener('click', e=>{
-  if(e.target.classList.contains('reg-btn')){
-    const v = e.target.dataset.v;
-    let disp = document.getElementById('register-display').textContent || '0';
-    if(v === 'C'){ disp = '0'; }
-    else if(v === '⌫'){ disp = disp.slice(0,-1) || '0'; }
-    else if(v === 'ENTER' || v === 'OK'){
-      // ENTER は補助。ここでは合計を客が置いた金額として扱う
-    } else {
-      if(disp === '0') disp = '' + v;
-      else disp = disp + v;
-    }
-    document.getElementById('register-display').textContent = disp;
-  }
-});
-
-/* 登録された金額の算出（player-insert） */
-function updateRegisterDisplay(){
-  const area = document.getElementById('player-insert');
-  let sum = 0;
-  area.querySelectorAll('[data-value]').forEach(n=>{
-    sum += Number(n.dataset.value);
-  });
-  // text 形式に反映
-  document.getElementById('register-display').textContent = sum;
-}
-
-/* 支払額が入ったらお釣り用意 */
-function checkForChange(){
-  if(!currentCashierCustomer) return;
-  const inserted = Number(document.getElementById('register-display').textContent) || 0;
-  const paid = currentCashierCustomer._paidAmount || 0;
-  const bill = currentCashierCustomer.billAmount || 0;
-  // プレイヤーは「客の出した金額」をレジに入れる必要あり -> 客が渡した金額を全部入れた時点でお釣りを用意する
-  // 判定: player-insert 内の合計が paid と等しいまたは大きければお釣り生成
-  if(inserted >= paid){
-    const change = inserted - bill;
-    const zone = document.getElementById('change-zone');
-    zone.innerHTML = '';
-    if(change > 0){
-      const changeCoins = toCoinArray(change);
-      changeCoins.forEach(v=>{
-        const d = document.createElement('div');
-        d.className = 'draggable-coin change-coin';
-        d.draggable = true;
-        d.dataset.value = v;
-        d.textContent = v + '円';
-        zone.appendChild(d);
-      });
-      terop(`お釣り ${change.toLocaleString()}円 を用意しました。`);
-    } else {
-      terop('お釣りはありません。会計は完了できます。');
-    }
-  }
-}
-
-/* プレイヤーが渡したお釣りを顧客受け取り欄でチェック */
-function checkChangeDelivered(){
-  if(!currentCashierCustomer) return;
-  const receive = document.getElementById('customer-receive');
-  let sum = 0;
-  receive.querySelectorAll('[data-value]').forEach(n=> sum += Number(n.dataset.value));
-  const paid = currentCashierCustomer._paidAmount || 0;
-  const bill = currentCashierCustomer.billAmount || 0;
-  const requiredChange = paid - bill;
-  if(sum === requiredChange){
-    terop('お釣り全部渡した。会計完了。');
-    // レジを閉じて顧客退店
-    const cust = currentCashierCustomer;
-    currentCashierCustomer = null;
-    closeRegister();
-    game.removeCustomer(cust, cust.seatId, true);
-  } else {
-    terop(`お釣りが足りない：${sum}/${requiredChange}円`);
-  }
-}
-
-function closeRegister(){
-  closeModal('register-modal');
-}
-
-/* --------------------
-   モード切替
-   -------------------- */
-function setOrderMode(m){ game.orderMode = m; terop(`注文モード: ${m}`); }
-function setPayMode(m){ game.payMode = m; terop(`会計モード: ${m}`); }
-
-/* --------------------
-   セーブ/ロード/その他
-   -------------------- */
-function saveGame(){
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(game.getGameData())); terop('セーブ完了'); } catch(e){ terop('セーブ失敗'); }
-}
-function loadGame(){
-  const s = localStorage.getItem(SAVE_KEY);
-  if(!s){ alert('セーブデータなし'); return; }
-  const d = JSON.parse(s);
-  // 最低限復元
-  currentSettings.type = d.settings.type || currentSettings.type;
-  currentSettings.currentSeats = d.currentSeats || currentSettings.currentSeats;
-  game.resetGame();
-  game.initializeGame({ type: currentSettings.type, currentSeats: currentSettings.currentSeats, initialMenu: MENU_DATA[currentSettings.type].slice(0,2) });
-  game.asset = d.asset || game.asset;
-  game.employees = (d.employees || []).map(e => new Employee(e.grade, e.id));
-  if(d.menu) game.menu = d.menu.map(m=> new MenuItem(m.name, m.currentPrice || m.currentPrice, m.cost || 0));
-  if(d.seatsData) game.seatsData = d.seatsData;
-  terop('ロード完了');
-  if(gameLoopRef) cancelAnimationFrame(gameLoopRef);
-  gameLoop(0);
-}
-
-function loadGameFromHome(){ loadGame(); }
-
-function quitGame(){
-  if(confirm('ゲームを終了してホームに戻る？')) {
-    game.isGameRunning = false;
-    if(gameLoopRef) cancelAnimationFrame(gameLoopRef);
-    location.reload();
-  }
-}
-
-/* --------------------
-   ヘルパー / UI 更新
-   -------------------- */
-function terop(msg){
-  const el = document.getElementById('log-terop');
-  el.textContent = msg;
-  el.style.opacity = 1;
-  setTimeout(()=> el.style.opacity = 0, 3000);
-}
-
-/* 小さなUI初期化 */
+// メニュー / アイテム
+function openMenu(){ showModal('menu-modal'); updateMenuUI(); }
+function openSettings(){ showModal('settings-modal'); }
+function openItems(){ showModal('item-modal'); updateItemUI(); }
 function updateMenuUI(){
   const el = document.getElementById('current-menu-list');
   el.innerHTML = '';
@@ -774,44 +1045,95 @@ function updateItemUI(){
   el.innerHTML = '';
   Object.keys(ITEM_DATA).forEach(k=>{
     const it = ITEM_DATA[k];
-    el.innerHTML += `<div style="margin-bottom:6px;">${it.name} — ${it.cost.toLocaleString()}円 <button class="button" onclick="purchaseItem('${k}')">購入</button></div>`;
+    const status = game.hasGarbageCan && k === 'GARBAGE_CAN' ? ' (購入済)' : '';
+    const disabled = game.hasGarbageCan && k === 'GARBAGE_CAN' ? 'disabled' : '';
+    el.innerHTML += `<div style="margin-bottom:6px;">${it.name} — ${it.cost.toLocaleString()}円 ${status} <button class="button" onclick="purchaseItem('${k}')" ${disabled}>購入</button></div>`;
   });
 }
 function purchaseItem(key){
   const it = ITEM_DATA[key];
-  if(game.asset < it.cost){ terop('お金が足りない'); return; }
+  if(game.asset < it.cost){ game.terop('お金が足りない'); return; }
   game.asset -= it.cost;
   if(key === 'GARBAGE_CAN') game.hasGarbageCan = true;
   updateItemUI();
-  terop(`${it.name} を購入`);
+  game.terop(`${it.name} を購入`);
 }
 
-/* 従業員 UI 初回更新 */
-updateEmployeeUI();
-
-/* --------------------
-   起動処理（開始用）
-   -------------------- */
-// 初期設定で自動開始してほしければここで startGame() を呼ぶ。
-// でも今回はホーム状態を維持。ユーザーが startGame を押したいならボタンを用意する。
-// ここでは簡易的に自動開始：
-startGame();
-
-/* --------------------
-   補助: プレイヤーが注文確認ボタンから呼ぶ関数（手動注文をプレイヤーが確認してキューに入れる）
-   -------------------- */
-function playerConfirmOrder(customerId){
-  playerConfirmOrder; // placeholder (実装済: playerConfirmOrder above)
+// 手動注文 (ver1.4)
+function takeOrder(customerId){
+    const customer = game.customers.find(c=>c.id === customerId);
+    if(customer && customer.status === 'WaitOrder'){
+        // 注文タスクを従業員タスクリストに追加
+        game.employeeTasks.push({type:'Order', customerId:customerId, duration: 3});
+        game.terop(`${customerId}番の注文をタスクに追加しました。`);
+        game.updateDisplay();
+    }
 }
 
-/* --------------------
-   終了時の警告
-   -------------------- */
-function showWarningOnExit(){
-  window.onbeforeunload = function(){
-    if(game && game.isGameRunning) return 'ゲーム進行が失われます。よいですか？';
-  };
+// レジ会計 (ver1.4)
+function openRegister(customerId){
+    regCustomer = game.customers.find(c=>c.id === customerId);
+    if(!regCustomer || regCustomer.status !== 'Paying') return;
+    
+    currentBill = regCustomer.billAmount;
+    registerInput = '0';
+    moneyGiven = 0;
+    
+    document.getElementById('register-modal').style.display = 'flex';
+    isRegistering = true;
+    game.isPaused = true;
+    updateRegisterUI();
 }
+function updateRegisterUI(){
+    document.getElementById('register-display').textContent = currentBill.toLocaleString() + '円';
+    document.getElementById('customer-money').textContent = `${moneyGiven.toLocaleString()}円 (入力値)`;
+    const change = moneyGiven - currentBill;
+    document.getElementById('change-zone').textContent = change > 0 ? `${change.toLocaleString()}円` : 'お釣りの必要なし';
+    document.getElementById('customer-receive').textContent = '客の受け取り';
+}
+function handleRegisterInput(value){
+    if(value === 'C'){ registerInput = '0'; }
+    else if(value === '⌫'){ registerInput = registerInput.slice(0, -1) || '0'; }
+    else if(value === 'ENTER'){ 
+        moneyGiven = parseInt(registerInput) || 0;
+        updateRegisterUI();
+    }
+    else if(value === 'OK'){ 
+        if(moneyGiven >= currentBill){
+            game.asset += currentBill;
+            game.terop(`${currentBill.toLocaleString()}円 手動会計完了`);
+            game.removeCustomer(regCustomer.id);
+            closeRegister();
+        } else {
+            game.terop('支払いが不足しています。');
+        }
+    }
+    else {
+        if(registerInput === '0') registerInput = value;
+        else registerInput += value;
+    }
+}
+function closeRegister(){
+    document.getElementById('register-modal').style.display = 'none';
+    isRegistering = false;
+    game.isPaused = false;
+    if(game.isGameRunning) gameLoop(0);
+}
+// 電卓ボタンにイベントリスナーを追加
+document.querySelectorAll('#register-modal .reg-btn').forEach(button => {
+    button.addEventListener('click', () => handleRegisterInput(button.dataset.v));
+});
+
+
+/* --------------------
+   起動処理（ホーム画面から開始）
+   -------------------- */
+window.onload = () => {
+    showScreen('home-screen');
+    checkSavedGame();
+    // ver1.4の自動startGame()は削除
+};
+
 </script>
 </body>
 </html>
